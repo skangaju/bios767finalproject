@@ -37,19 +37,48 @@ framingham %>%
 * The binary outcome we will be studying is coronary heart disease. This is defined as any of the following conditions: Angina Pectoris, Myocardial infarction (Hospitalized and silent or unrecognized), or Coronary Insufficiency (Unstable Angina).
 
 ## 3c. Grouping Variable
-* The grouping varibale we will use is sex. There are 2 groups: male and female.
+* The grouping variable we will use is sex. There are 2 groups: male and female.
 
 ## 3d. Other Variables
 * Age at exam
 * BMI
 * Smoking Status (current/not current smoker)
-* Total cholesterol (mg/DL)
+* Total cholesterol (mg/dL)
 * Diabetes
 * Use of Anti-hypertensive medication at exam
-* Heartrate in (beat/min)
+* Heart rate (beat/min)
 * Glucose (mg/dL)
 
 # 4. Descriptive Summary
+
+```{r}
+baseline = framingham[framingham$PERIOD==1,] %>% mutate(
+  SEX = if_else(SEX==1,"Male","Female"),
+  CURSMOKE = if_else(CURSMOKE==1,"Smoker","Nonsmoker"),
+  DIABETES = if_else(DIABETES==1,"Yes","No"),
+  BPMEDS = if_else(BPMEDS==1,"Yes","No"),
+  ANYCHD = if_else(ANYCHD==1,"Yes","No"))
+
+label(baseline$SEX) = "Sex"
+label(baseline$AGE) = "Age"
+label(baseline$BMI) = "Body Mass Index"
+label(baseline$CURSMOKE) = "Smoking Status"
+label(baseline$TOTCHOL) = "Total Cholesterol (mg/dL)"
+label(baseline$DIABETES) = "Diabetes"
+label(baseline$BPMEDS) = "Use of Anti-Hypertensive Medication"
+label(baseline$HEARTRTE) = "Heart Rate (beat/min)"
+label(baseline$GLUCOSE) = "Casual Serum Glucose (mg/dL)"
+label(baseline$SYSBP) = "Systolic Blood Pressure"
+label(baseline$ANYCHD) = "Incidence of Any CHD During Followup"
+
+
+table1(~ SEX + AGE + BMI + CURSMOKE + TOTCHOL + DIABETES + BPMEDS +
+         HEARTRTE + GLUCOSE + SYSBP + ANYCHD, data = baseline,
+       caption = "Table 1. Patient Baseline Characteristics",
+       render = function(missing=TRUE, ...) {
+         table1::render.default(missing=TRUE, ...)})
+```
+
 
 # 5. Limitations and Challenges
 
