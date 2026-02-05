@@ -1,0 +1,66 @@
+---
+title: "Homework 1"
+author: "Sonia Kangaju & Abbey Skinner"
+date: "2026-01-28"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r, include = FALSE}
+library(riskCommunicator)
+library(dplyr)
+```
+
+```{r, include = FALSE}
+data(framingham)
+
+## 3206 that have 3 or more observations
+framingham %>%
+  count(RANDID, name = "n_obs") %>%
+  filter(n_obs >= 3)
+```
+
+# 1. Team Members
+
+* Sonia Kangaju & Abbey Skinner
+
+# 2. Dataset Description
+
+* The Framingham Heart Study is a long running longnitudinal study, beginning in 1948, that has followed multiple generations over time for the purpose of determining risk factors of cardiovascular diseases. This dataset is a subset of patients between 1956 to 1968. Patients were then followed for 24 years to determine if they had any of the following events: Angina Pectoris, Myocardial Infarction, Atherothrombotic Infarction or Cerebral Hemorrhage (Stroke) or death. We have a total sample size of $n=3206$ after filtering for subjects who have 3 or more visits (originally had $n=4434$). Follow-up vists occured every 6 years, so our measurements occur at baseline, 6 years, and 12 years. https://search.r-project.org/CRAN/refmans/riskCommunicator/html/framingham.html  
+
+# 3. Variables
+## 3a. Continuous Outcome
+* The continuous outcome we will be studying is systolic blood pressure (mmHG). At each visit, blood pressure was taken three times. The value stored in this variable is the average systolic blood pressure of the last 2 measurements.
+
+## 3b. Binary Outcome
+* The binary outcome we will be studying is coronary heart disease. This is defined as any of the following conditions: Angina Pectoris, Myocardial infarction (Hospitalized and silent or unrecognized), or Coronary Insufficiency (Unstable Angina).
+
+## 3c. Grouping Variable
+* The grouping varibale we will use is sex. There are 2 groups: male and female.
+
+## 3d. Other Variables
+* Age at exam
+* BMI
+* Smoking Status (current/not current smoker)
+* Total cholesterol (mg/DL)
+* Diabetes
+* Use of Anti-hypertensive medication at exam
+* Heartrate in (beat/min)
+* Glucose (mg/dL)
+
+# 4. Descriptive Summary
+
+# 5. Limitations and Challenges
+
+
+
+
+
+
+
+
+
+
+
+
