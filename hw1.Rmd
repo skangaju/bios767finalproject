@@ -36,7 +36,7 @@ framingham %>%
 * The continuous outcome we will be studying is systolic blood pressure (mmHG). At each visit, blood pressure was taken three times. The value stored in this variable is the average systolic blood pressure of the last 2 measurements.
 
 ## 3b. Binary Outcome
-* The binary outcome we will be studying is coronary heart disease. This is defined as any of the following conditions: Angina Pectoris, Myocardial infarction (Hospitalized and silent or unrecognized), or Coronary Insufficiency (Unstable Angina).
+* The binary outcome we will be studying is coronary heart disease (CHD). This is defined as any of the following conditions: Angina Pectoris, Myocardial infarction (Hospitalized and silent or unrecognized), Coronary Insufficiency (Unstable Angina), or Fatal CHD.
 
 ## 3c. Grouping Variable
 * The grouping variable we will use is sex. There are 2 groups: male and female.
