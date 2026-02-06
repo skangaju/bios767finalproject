@@ -25,23 +25,23 @@ framingham %>%
 
 # 1. Team Members
 
-* Sonia Kangaju & Abbey Skinner
+Sonia Kangaju & Abbey Skinner
 
 # 2. Dataset Description
 
-* The Framingham Heart Study is a long running longnitudinal study, beginning in 1948, that has followed multiple generations over time for the purpose of determining risk factors of cardiovascular diseases. This dataset is a subset of patients between 1956 to 1968. Patients were then followed for 24 years to determine if they had any of the following events: Angina Pectoris, Myocardial Infarction, Atherothrombotic Infarction or Cerebral Hemorrhage (Stroke) or death. We have a total sample size of $n=3206$ after filtering for subjects who have 3 or more visits (originally had $n=4434$). Follow-up vists occured every 6 years, so our measurements occur at baseline, 6 years, and 12 years. https://search.r-project.org/CRAN/refmans/riskCommunicator/html/framingham.html  
+The Framingham Heart Study is a long running longnitudinal study, beginning in 1948, that has followed multiple generations over time for the purpose of determining risk factors of cardiovascular diseases. This dataset is a subset of patients between 1956 to 1968. Patients were then followed for 24 years to determine if they had any of the following events: Angina Pectoris, Myocardial Infarction, Atherothrombotic Infarction or Cerebral Hemorrhage (Stroke) or death. We have a total sample size of $n=3206$ after filtering for subjects who have 3 or more visits (originally had $n=4434$). Follow-up vists occured every 6 years, so our measurements occur at baseline, 6 years, and 12 years. https://search.r-project.org/CRAN/refmans/riskCommunicator/html/framingham.html  
 
 # 3. Variables
-## 3a. Continuous Outcome
-* The continuous outcome we will be studying is systolic blood pressure (mmHG). At each visit, blood pressure was taken three times. The value stored in this variable is the average systolic blood pressure of the last 2 measurements.
+## Continuous Outcome
+The continuous outcome we will be studying is systolic blood pressure (mmHG). At each visit, blood pressure was taken three times. The value stored in this variable is the average systolic blood pressure of the last 2 measurements.
 
-## 3b. Binary Outcome
-* The binary outcome we will be studying is coronary heart disease (CHD). This is defined as any of the following conditions: Angina Pectoris, Myocardial infarction (Hospitalized and silent or unrecognized), Coronary Insufficiency (Unstable Angina), or Fatal CHD.
+## Binary Outcome
+The binary outcome we will be studying is coronary heart disease (CHD). This is defined as any of the following conditions: Angina Pectoris, Myocardial infarction (Hospitalized and silent or unrecognized), Coronary Insufficiency (Unstable Angina), or Fatal CHD.
 
-## 3c. Grouping Variable
-* The grouping variable we will use is sex. There are 2 groups: male and female.
+## Grouping Variable
+The grouping variable we will use is sex. There are 2 groups: male and female.
 
-## 3d. Other Variables
+## Other Variables
 * Age at exam
 * BMI
 * Smoking Status (current/not current smoker)
@@ -52,6 +52,8 @@ framingham %>%
 * Glucose (mg/dL)
 
 # 4. Descriptive Summary
+
+See next page.
 
 ```{r, include = FALSE}
 data(framingham)
@@ -97,6 +99,9 @@ table1(~ SEX + AGE + BMI + CURSMOKE + TOTCHOL + DIABETES + BPMEDS +
 
 # 5. Limitations and Challenges
 
+One challenge we may face has to do with the spacing between data points. While patients came every 6 years, it was not exactly constant for all patients. We have a variable that measures the number of days from baseline exam to follow up. For the 1st follow up the range of days is between 1734 and 2562 days (4.75 to 7.02 years). For the 2nd follow up the range of days is between 3899 and 4854 days (10.68 to 13.29 years). This may potentially cause us challenges.
+
+Another challenge we may face has to do with our binary outcome variable. These patients, while all having 3 follow-up visits within the dataset, were followed for 24 years to determine if they developed any of the adverse outcomes being study. Because of this, we don't know when our outcome occured, just that it eventually did occur. A patient has a 1 for all 3 visits if they developed the outcome at any point within the study or during the 24 years of follow-up. Alternatively, there is also a binary indicator that tells us if a patient has the condition during a specific visit. We could also use this variable for our outcome depending on how the methods we use require the outcome to be set up.
 
 
 
