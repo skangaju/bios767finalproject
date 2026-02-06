@@ -10,6 +10,8 @@ output:
 ```{r, include = FALSE}
 library(riskCommunicator)
 library(dplyr)
+library(Hmisc)
+library(table1)
 ```
 
 ```{r, include = FALSE}
@@ -51,8 +53,20 @@ framingham %>%
 
 # 4. Descriptive Summary
 
-```{r}
-baseline = framingham[framingham$PERIOD==1,] %>% mutate(
+```{r, include = FALSE}
+data(framingham)
+
+# find patients who had 3 visits
+three_visits <- framingham %>%
+  count(RANDID, name = "n_obs") %>%
+  filter(n_obs >= 3)
+
+# only keep those with 3 visits
+framingham2 <- framingham %>%
+  semi_join(three_visits, by = "RANDID")
+
+# get baseline visit info
+baseline = framingham2[framingham2$PERIOD==1,] %>% mutate(
   SEX = if_else(SEX==1,"Male","Female"),
   CURSMOKE = if_else(CURSMOKE==1,"Smoker","Nonsmoker"),
   DIABETES = if_else(DIABETES==1,"Yes","No"),
@@ -70,8 +84,9 @@ label(baseline$HEARTRTE) = "Heart Rate (beat/min)"
 label(baseline$GLUCOSE) = "Casual Serum Glucose (mg/dL)"
 label(baseline$SYSBP) = "Systolic Blood Pressure"
 label(baseline$ANYCHD) = "Incidence of Any CHD During Followup"
+```
 
-
+```{r, echo=FALSE}
 table1(~ SEX + AGE + BMI + CURSMOKE + TOTCHOL + DIABETES + BPMEDS +
          HEARTRTE + GLUCOSE + SYSBP + ANYCHD, data = baseline,
        caption = "Table 1. Patient Baseline Characteristics",
