@@ -10,8 +10,10 @@ output:
 ```{r, include = FALSE}
 library(riskCommunicator)
 library(dplyr)
+library(ggplot2)
 library(Hmisc)
 library(table1)
+library(kableExtra)
 ```
 
 ```{r, include = FALSE}
@@ -91,7 +93,7 @@ label(baseline$ANYCHD) = "Incidence of Any CHD During Followup"
 ```{r, echo=FALSE}
 table1(~ SEX + AGE + BMI + CURSMOKE + TOTCHOL + DIABETES + BPMEDS +
          HEARTRTE + GLUCOSE + SYSBP + ANYCHD, data = baseline,
-       caption = "Table 1. Patient Baseline Characteristics",
+       caption = "Patient Baseline Characteristics",
        render = function(missing=TRUE, ...) {
          table1::render.default(missing=TRUE, ...)})
 ```
@@ -101,8 +103,23 @@ table1(~ SEX + AGE + BMI + CURSMOKE + TOTCHOL + DIABETES + BPMEDS +
 
 One challenge we may face has to do with the spacing between data points. While patients came every 6 years, it was not exactly constant for all patients. We have a variable that measures the number of days from baseline exam to follow up. For the 1st follow up the range of days is between 1734 and 2562 days (4.75 to 7.02 years). For the 2nd follow up the range of days is between 3899 and 4854 days (10.68 to 13.29 years). This may potentially cause us challenges.
 
-Another challenge we may face has to do with our binary outcome variable. These patients, while all having 3 follow-up visits within the dataset, were followed for 24 years to determine if they developed any of the adverse outcomes being study. Because of this, we don't know when our outcome occured, just that it eventually did occur. A patient has a 1 for all 3 visits if they developed the outcome at any point within the study or during the 24 years of follow-up. Alternatively, there is also a binary indicator that tells us if a patient has the condition during a specific visit. We could also use this variable for our outcome depending on how the methods we use require the outcome to be set up.
+Another challenge we may face has to do with our binary outcome variable. These patients, while all having 3 follow-up visits within the dataset, were followed for 24 years to determine if they developed any of the adverse outcomes being study. Because of this, we don't know when our outcome occurred, just that it eventually did occur. A patient has a 1 for all 3 visits if they developed the outcome at any point within the study or during the 24 years of follow-up. Alternatively, there is also a binary indicator that tells us if a patient has the condition during a specific visit. We could also use this variable for our outcome depending on how the methods we use require the outcome to be set up.
 
+Lastly, the distribution of systolic blood pressure is notably right-skewed across all periods and for both sexes, though the skew seems to be higher for females than it is for males, on average. We will have to take this skew into account and carefully handle outliers when conducting our analyses.
+
+```{r}
+framingham2 = framingham2 %>% mutate(
+  PERIOD = PERIOD %>% as.factor(),
+  SEX = if_else(SEX==1,"Male","Female"))
+```
+
+```{r}
+ggplot(framingham2, aes(x = PERIOD, y = SYSBP, fill = PERIOD)) + 
+  geom_boxplot() + facet_grid(~SEX) +
+  ggtitle("Distributions of Systolic Blood Pressure by Period") +
+  xlab("Period") + ylab ("Systolic Blood Pressure (mmHg)") +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+```
 
 
 
