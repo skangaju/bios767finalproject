@@ -1,0 +1,74 @@
+---
+title: "Homework 2"
+author: "Sonia Kangaju & Abbey Skinner"
+date: "2026-03-03"
+output: html_document
+---
+
+# Submission + Formatting Requirements
+*delete this section before turning in*
+
+Your submission should include:
+• A written report addressing all parts above
+• All relevant tables and figures embedded in your report
+• Your SAS and/or R code as an appendix
+• Selected output (not all raw output—select the relevant portions)
+
+• Write as if preparing a report for a statistical consulting client
+• Be specific with your interpretations—relate findings back to your actual variables and research
+context
+• Round test statistics and p-values appropriately (e.g., F = 4.23, p = 0.018)
+• For very small p-values, report as p < 0.001
+
+
+
+
+# Descriptive Analysis 
+
+*1. Descriptive statistics (Abbey):* Create a table presenting the mean and standard devia-
+tion of your continuous outcome at each time point, separately by group.
+
+
+*2. Interaction plot (Sonia) :* Create a plot showing the mean response over time for each
+group. Based on your plot, comment on whether the profiles appear parallel and whether the
+groups appear to differ in their overall level
+
+# Univariate Repeated Measures ANOVA - Abbey
+
+*1. Sphericity assessment (10 points):* Assess whether the sphericity assumption is appropriate
+for your data. Describe your findings and explain how they affect your approach to the within-
+subject tests.
+
+*2. Hypothesis tests (20 points):* Test and interpret the following effects:
+- Time effect: Is there evidence that the mean response changes over time?
+- Group effect: Is there evidence that groups differ in their overall mean response?
+- Group × Time interaction: Is there evidence that the groups have non-parallel profiles?
+
+For each test, report the relevant test statistic and p-value, and interpret the result in the context
+of your research question.
+
+# MANOVA - Sonia
+
+*1. Test of parallelism (10 points):* Test whether the group profiles are parallel using MANOVA.
+State what you found and what the result means for your research question.
+
+*2. Test of group effect (10 points):* If appropriate based on your parallelism results, test
+whether the groups have coincident profiles (i.e., same overall level). Explain why testing for
+coincident profiles is or is not appropriate given your parallelism results.
+
+*3. Test of time effect (10 points):* Test whether there is an overall time effect using MANOVA.
+Compare the MANOVA time effect result to the univariate time effect result from Part 2.
+
+# Comparison and Interpretation
+
+*1. Comparison of approaches (Abbey):* Compare the results from the univariate and
+MANOVA approaches. Did they lead to the same conclusions? If not, explain why the re-
+sults may differ and which approach you consider more appropriate for your data.
+
+*2. Scientific interpretation (Sonia):* Summarize your findings as you would for a collab-
+orator. What did you learn about how your outcome changes over time and whether groups
+differ?
+
+*3. Limitations (Both):* Discuss at least two limitations of these classical approaches for your
+dataset.
+
