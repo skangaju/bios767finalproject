@@ -1,26 +1,12 @@
 ---
 title: "Homework 2"
 author: "Sonia Kangaju & Abbey Skinner"
-date: "2026-03-03"
+date: "2026-03-06"
 output:
   pdf_document: default
   html_document: default
 ---
 
-# Submission + Formatting Requirements
-*delete this section before turning in*
-
-Your submission should include:
-• A written report addressing all parts above
-• All relevant tables and figures embedded in your report
-• Your SAS and/or R code as an appendix
-• Selected output (not all raw output—select the relevant portions)
-
-• Write as if preparing a report for a statistical consulting client
-• Be specific with your interpretations—relate findings back to your actual variables and research
-context
-• Round test statistics and p-values appropriately (e.g., F = 4.23, p = 0.018)
-• For very small p-values, report as p < 0.001
 
 ```{r, include = FALSE}
 library(riskCommunicator)
@@ -101,12 +87,32 @@ tab_dat %>%
   fmt_number(
     columns = -PERIOD,
     decimals = 1
+  ) %>% 
+  tab_options(
+    heading.title.font.size = px(20),
+    latex.tbl.pos = "h"
   )
 ```
 
 
+*2. Interaction plot (Sonia) :* Create a plot showing the mean response over time for each group. Based on your plot, comment on whether the profiles appear parallel and whether the groups appear to differ in their overall level.
 
-*2. Interaction plot (Sonia) :* Create a plot showing the mean response over time for each group. Based on your plot, comment on whether the profiles appear parallel and whether the groups appear to differ in their overall level
+```{r, fig.height = 3, echo = FALSE}
+tab_dat %>% ggplot(aes(x = PERIOD)) + 
+  geom_line(aes(y = Male_mean_sbp, color = "Male"), linewidth = 0.75) +
+  geom_point(aes(y = Male_mean_sbp), color = "green3", size = 2.5) +
+  geom_line(aes(y = Female_mean_sbp, color = "Female"), linewidth = 0.75) +
+  geom_point(aes(y = Female_mean_sbp), color = "blue3", size = 2.5) +
+  ggtitle("Mean Systolic Blood Pressure Over Time, By Sex") +
+  xlab("Period") + ylab("Mean Systolic Blood Pressure (mmHg)") +
+  scale_x_continuous(breaks = 1:3) + labs(color = "Sex") + 
+  scale_color_manual(values = c("Male" = "green3", "Female" = "blue3")) +
+  theme_minimal() + theme(plot.title = element_text(hjust = 0.5))
+```
+
+Based on the above plot, the systolic blood pressure trajectories for males and females appear to be parallel, with both trajectories increasing over time. At each time point, females appear to have higher average systolic blood pressure than males.
+
+
 
 # Univariate Repeated Measures ANOVA - Abbey
 
@@ -116,7 +122,7 @@ subject tests.
 
 We used Mauchly's Test of Sphericity which tests if type H covariance structure is valid. After running this test in SAS, we got a p-value of $<.0001$ which tells us that this assumption is not valid for our dataset. To account for this, we will use the adjusted p-values for the within-subject tests.
 
-![Mauchly's Test SAS output](SAS/hw2/mauchly.png)
+![Mauchly's Test SAS output](SAS/hw2/mauchly.png){width=70%}
 
 
 
@@ -134,42 +140,64 @@ For the test of a sex effect, we have an F-value of $7.09$ and a p-value of $0.0
 
 For the test of an interaction effect, we have an F-value of $0.19$ and an adjusted p-value of $0.8179$. We do not have evidence that there is an interaction effect between sex and time with relation to systolic blodd pressure. This suggests that the lines for sex are parallel.
 
-![Repeated Measures ANOVA SAS output, sex effect](SAS/hw2/repeated_measures_ANOVA2.png)
+![Repeated Measures ANOVA SAS output, sex effect](SAS/hw2/repeated_measures_ANOVA2.png){width=60%}
 
-![Repeated Measures ANOVA SAS output, time and interaction effects](SAS/hw2/repeated_measures_ANOVA.png)
+![Repeated Measures ANOVA SAS output, time and interaction effects](SAS/hw2/repeated_measures_ANOVA.png){width=75%}
 
+
+\newpage
 
 # MANOVA - Sonia
 
 *1. Test of parallelism (10 points):* Test whether the group profiles are parallel using MANOVA.
 State what you found and what the result means for your research question.
 
-*2. Test of group effect (10 points):* If appropriate based on your parallelism results, test
-whether the groups have coincident profiles (i.e., same overall level). Explain why testing for
-coincident profiles is or is not appropriate given your parallelism results.
+For the test of parallelism, the Wilks' Lambda value is $\approx 1.00$, and $p = 0.85$. Since the p-value is greater than 0.05, we fail to reject the null hypothesis and conclude that there is no strong evidence for a lack of parallelism. This suggests that there is no interaction effect between sex and time, so the effect of time on mean systolic blood pressure is the same for males and females.
 
-*3. Test of time effect (10 points):* Test whether there is an overall time effect using MANOVA.
-Compare the MANOVA time effect result to the univariate time effect result from Part 2.
+
+*2. Test of group effect (10 points):* If appropriate based on your parallelism results, test
+whether the groups have coincident profiles (i.e., same overall level). Explain why testing for coincident profiles is or is not appropriate given your parallelism results.
+
+Since we concluded above that there is no interaction effect between sex and time, the population mean trajectories for males and for females can be assumed to be parallel. Therefore, it is appropriate to test whether the groups have coincident profiles under the assumption that said profiles are parallel.
+
+For the test of same profiles, $F = 7.09$, and $p = 0.0078$. Since the p-value is less than 0.05, we reject the null hypothesis and conclude that there is evidence of a nonzero effect of sex on mean systolic blood pressure at any fixed time point. This suggests that males and females have parallel but distinct mean systolic blood pressure trajectories.
+
+
+*3. Test of time effect (10 points):* Test whether there is an overall time effect using MANOVA. Compare the MANOVA time effect result to the univariate time effect result from Part 2.
+
+For the test of the time effect, $F = 462.31$, and $p < 0.0001$. Since the p-value is less than 0.05, we reject the null hypothesis and conclude that there is evidence of a nonzero effect of time on mean systolic blood pressure, holding sex fixed. This suggests that the mean systolic blood pressure trajectories for both sexes are not flat.
+
+
+![MANOVA SAS output, test of parallelism](SAS/hw2/MANOVA_parallelism.png){width=50%}
+
+![MANOVA SAS output, test of sex effect](SAS/hw2/MANOVA_same_profiles.png){width=70%}
+
+![MANOVA SAS output, test of time effect](SAS/hw2/MANOVA_time_effect.png){width=70%}
+
+
+\newpage
 
 # Comparison and Interpretation
 
 *1. Comparison of approaches (Abbey):* Compare the results from the univariate and
-MANOVA approaches. Did they lead to the same conclusions? If not, explain why the re-
-sults may differ and which approach you consider more appropriate for your data.
+MANOVA approaches. Did they lead to the same conclusions? If not, explain why the results may differ and which approach you consider more appropriate for your data.
 
-*2. Scientific interpretation (Sonia):* Summarize your findings as you would for a collab-
-orator. What did you learn about how your outcome changes over time and whether groups
+*2. Scientific interpretation (Sonia):* Summarize your findings as you would for a collaborator. What did you learn about how your outcome changes over time and whether groups
 differ?
 
-*3. Limitations (Both):* Discuss at least two limitations of these classical approaches for your
-dataset.
+Our findings suggest that for both males and females, average systolic blood pressure changes over time. More specifically, according to the plot of the population mean trajectories, it appears to increase over time. We have also found that the rate of increase over time is the same for both males and females. However, at each time point, mean systolic blood pressure differs between males and females. According to the plot of the population mean trajectories, mean systolic blood pressure is higher than mean systolic blood pressure for males at each time point.
+
+*3. Limitations (Both):* Discuss at least two limitations of these classical approaches for your dataset.
+
+MANOVA models the covariance between time periods uses an unstructured covariance matrix. While this is a more realistic assumption than the compound symmetry that is assumed in repeated measures ANOVA, interpreting results from the estimated covariance matrix is less straightforward than it is with repeated measures ANOVA.
 
 
+\newpage
 
 # Appendix
 
 
 ![SAS Code for Univariate Repeated Measures ANOVA](SAS/hw2/SAS_code_RMANOVA.png)
 
-
+![SAS Code for MANOVA](SAS/hw2/SAS_code_MANOVA.png)
 
