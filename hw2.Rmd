@@ -42,15 +42,15 @@ framingham_wide <- framingham2 %>%
   # only keep what we need
   select(RANDID, SEX, sysbp1, sysbp2, sysbp3)
 
-write.csv(framingham, file = "framingham.csv", row.names = FALSE)
-write.csv(framingham_wide, file = "framingham_wide.csv", row.names = FALSE)
+# write.csv(framingham, file = "framingham.csv", row.names = FALSE)
+# write.csv(framingham_wide, file = "framingham_wide.csv", row.names = FALSE)
 
 ```
 
 
 # Descriptive Analysis 
 
-*1. Descriptive statistics (Abbey):* Create a table presenting the mean and standard deviation of your continuous outcome at each time point, separately by group.
+*1. Descriptive statistics:* Create a table presenting the mean and standard deviation of your continuous outcome at each time point, separately by group.
 
 ```{r, echo = FALSE}
 tab_dat <- framingham2 %>%
@@ -95,7 +95,7 @@ tab_dat %>%
 ```
 
 
-*2. Interaction plot (Sonia) :* Create a plot showing the mean response over time for each group. Based on your plot, comment on whether the profiles appear parallel and whether the groups appear to differ in their overall level.
+*2. Interaction plot:* Create a plot showing the mean response over time for each group. Based on your plot, comment on whether the profiles appear parallel and whether the groups appear to differ in their overall level.
 
 ```{r, fig.height = 3, echo = FALSE}
 tab_dat %>% ggplot(aes(x = PERIOD)) + 
@@ -114,7 +114,7 @@ Based on the above plot, the systolic blood pressure trajectories for males and 
 
 
 
-# Univariate Repeated Measures ANOVA - Abbey
+# Univariate Repeated Measures ANOVA
 
 *1. Sphericity assessment (10 points):* Assess whether the sphericity assumption is appropriate
 for your data. Describe your findings and explain how they affect your approach to the within-
@@ -147,7 +147,7 @@ For the test of an interaction effect, we have an F-value of $0.19$ and an adjus
 
 \newpage
 
-# MANOVA - Sonia
+# MANOVA
 
 *1. Test of parallelism (10 points):* Test whether the group profiles are parallel using MANOVA.
 State what you found and what the result means for your research question.
@@ -179,18 +179,19 @@ For the test of the time effect, $F = 462.31$, and $p < 0.0001$. Since the p-val
 
 # Comparison and Interpretation
 
-*1. Comparison of approaches (Abbey):* Compare the results from the univariate and
+*1. Comparison of approaches:* Compare the results from the univariate and
 MANOVA approaches. Did they lead to the same conclusions? If not, explain why the results may differ and which approach you consider more appropriate for your data.
 
-*2. Scientific interpretation (Sonia):* Summarize your findings as you would for a collaborator. What did you learn about how your outcome changes over time and whether groups
+Both approached yielded the same results. We found that there is consistent evidence of a time and group affect, but no evidence of an interaction effect. Notibly the test of a sex effect had the exact same F-stat and p-value. Between these two methods, I believe that MANOVA is more appropriate for our data. While conducting the repeated measures ANOVA, we found that our data does not fufill the assumption of a Type H covariance matrix. On the contrary, MANOVA does not assume a strict covariance structure so we do not have issues there. 
+
+*2. Scientific interpretation:* Summarize your findings as you would for a collaborator. What did you learn about how your outcome changes over time and whether groups
 differ?
 
 Our findings suggest that for both males and females, average systolic blood pressure changes over time. More specifically, according to the plot of the population mean trajectories, it appears to increase over time. We have also found that the rate of increase over time is the same for both males and females. However, at each time point, mean systolic blood pressure differs between males and females. According to the plot of the population mean trajectories, mean systolic blood pressure is higher than mean systolic blood pressure for males at each time point.
 
-*3. Limitations (Both):* Discuss at least two limitations of these classical approaches for your dataset.
+*3. Limitations:* Discuss at least two limitations of these classical approaches for your dataset.
 
-MANOVA models the covariance between time periods uses an unstructured covariance matrix. While this is a more realistic assumption than the compound symmetry that is assumed in repeated measures ANOVA, interpreting results from the estimated covariance matrix is less straightforward than it is with repeated measures ANOVA.
-
+MANOVA models the covariance between time periods using an unstructured covariance matrix. While this is a more realistic assumption than the compound symmetry that is assumed in repeated measures ANOVA, interpreting results from the estimated covariance matrix is less straightforward than it is with repeated measures ANOVA. Additionally, both of these methods treat time as a discrete factor and do not explicitly account for the spacing of measurement times. In our study, visits are approximatley 6 years apart, however there is variability from patient to patient. The time from baseline to 1st follow up ranges between 1734 and 2562 days (4.75 to 7.02 years) and time from baseline to 2nd follow up ranges between 3899 and 4854 days (10.68 to 13.29 years).
 
 \newpage
 
