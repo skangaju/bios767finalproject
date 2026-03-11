@@ -1,0 +1,178 @@
+---
+title: "Homework 3"
+author: "Sonia Kangaju & Abbey Skinner"
+date: "2026-03-11"
+output: pdf_document
+---
+
+```{r, include = FALSE}
+library(riskCommunicator)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(gt)
+```
+
+```{r}
+framingham <- read.csv("~/Desktop/UNC/Spring 2026/Bios 767/Homeworks/bios767finalproject/framingham.csv")
+framingham_wide <- read.csv("~/Desktop/UNC/Spring 2026/Bios 767/Homeworks/bios767finalproject/framingham_wide.csv")
+```
+
+Sonia: please adjust anything I have done if you dont think its correct. Or if you're also not sure, you can make notes of things in the Rmd (and/or text me about them). I tried my best to follow the notes, but I may have misinterpreted what the questions are asking -- especially this first one.
+
+# Model Specification
+
+*1. Model formulation (10 points):* Write out your model in the form $Y_i = X_i\beta + \epsilon_i$. Describe your mean structure and identify each parameter in $\beta$. What does each parameter represent in the context of your research question?
+
+For the mean model, we will take the profile analysis (saturated mean model) approach. We will use reference cell coding. Since this is an observational study, we will not place a constraint on the baseline means and keep baseline as an outcome. This method allows group means (male/female) to differ at baseline.
+
+Let $i=1,...,3206$ denote the subjects and let $j=0,6,12$ denote the year of the visit where 0 is the baseline. Recall that patients follow up every 6 years. All patients have a total of 3 visits.
+
+We have that $Y_i = (Y_{i0}, Y_{i6}, Y_{i12})^T$, $\beta = (\beta_0, \beta_1, \beta_2, \beta_3, \beta_4, \beta_5)^T$. We can write out the following:
+
+$$Y_{ij} = \beta_0 + \beta_1I(year=6) + \beta_2I(year = 12) + \beta_3I(female) + \beta_4I(female)I(year = 6) + \beta_5 I(female)I(year = 12 ) + \epsilon_{ij}$$
+* $\beta_0$ denotes the baseline mean SBP for males
+* $\beta_1$ denotes the change in mean SBP from baseline to year 6 for males
+* $\beta_2$ denotes the change in mean SBP from baseline to year 12 for males.
+* $\beta_3$ denotes the difference in mean SBP between females and males at baseline
+* $\beta_4$ denotes the change in the female-male gap from baseline to year 6
+* $\beta_5$ denotes the change in the female-male gap from baseline to year 12
+
+*2. Visualization (10 points):* Create a figure showing your observed data (e.g., individual trajectories or group means over time) along with the fitted mean structure from your model. Does the model appear to capture the patterns in your data?
+
+The figure below plots the observed data group means as solid lines and the fitted mean structure as dashed lines. The model appears to capture the difference in sex means, but underestimates the mean SBP for the first two visits. 
+
+*should I modifiy the mean model?? I'm not exactly sure on all of the steps here*
+Is this the plot they are asking us to make?
+
+```{r}
+# build the fitted model (code from class)
+library(nlme)
+fit_sat <- gls(SYSBP ~ factor(PERIOD) * SEX, 
+               data = framingham,
+               corr = corSymm(form = ~ 1 | RANDID),
+               weights = varIdent(form = ~ 1 | PERIOD),
+               method = "ML")
+summary(fit_sat)
+
+# make a df with the means for plotting
+fit_means <- data.frame(
+  time = c(0, 6, 12, 0, 6, 12),
+  mean = c(129.65286,
+           134.08998,
+           139.20663,
+           131.73618,
+           136.47607,
+           141.09618),
+  sex = c("Male","Male","Male","Female","Female","Female")
+)
+```
+
+```{r}
+# plot from hw2
+tab_dat <- framingham %>%
+  mutate(SEX = recode(as.character(SEX), `1` = "Male", `2` = "Female"),
+         YEAR = recode(PERIOD, `1` = 0, `2` = 6, `3` = 12)) %>%
+  group_by(YEAR, SEX) %>%
+  summarise(
+    mean_sbp = mean(SYSBP, na.rm = TRUE),
+    sd_sbp   = sd(SYSBP,   na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from  = SEX,
+    values_from = c(mean_sbp, sd_sbp),
+    names_glue  = "{SEX}_{.value}"
+  )
+
+tab_dat %>% ggplot(aes(x = YEAR)) + 
+  geom_line(aes(y = Male_mean_sbp, color = "Male"), linewidth = 0.75) +
+  geom_point(aes(y = Male_mean_sbp), color = "green3", size = 2.5) +
+  geom_line(aes(y = Female_mean_sbp, color = "Female"), linewidth = 0.75) +
+  geom_point(aes(y = Female_mean_sbp), color = "blue3", size = 2.5) +
+  ggtitle("Mean Systolic Blood Pressure Over Time, By Sex") +
+  xlab("Year") + ylab("Mean Systolic Blood Pressure (mmHg)") +
+  scale_x_continuous(breaks = 0:12) + labs(color = "Sex") + 
+  scale_color_manual(values = c("Male" = "green3", "Female" = "blue3")) +
+  theme_minimal() + theme(plot.title = element_text(hjust = 0.5))+
+  # add the fitted lines 
+  geom_line(data = fit_means,
+            aes(x = time, y = mean, color = sex),
+            linetype = "dashed",
+            linewidth = 1.2) +
+  geom_point(data = fit_means,
+             aes(x = time, y = mean, color = sex),
+             shape = 1,
+             size = 3)
+
+
+```
+
+
+# Estimation and Covariance Structure 
+*1. Covariance structure (15 points):* Select a covariance structure for $Var(\epsilon_i)$ and fit your model. Justify your choice based on what you observed in your data (e.g., from the sample correlation matrix or your understanding of the data-generating process).
+
+Below, we see the sample correlation matrices for SBP measurements at each visit. We see that measurements closer in time are more highly correlated (0.717 between baseline and 6 years compared to 0.618 between baseline and 12 years). We also find that SBP at 6 month has a higher correlation between baseline compared to 12 year. Based on this, we will choose AR(1) as our covariance structure for $Var(\epsilon_i)$ since we have equally spaced measurements with decaying correlation over time
+
+```{r}
+cor(framingham_wide %>% select(sysbp1, sysbp2, sysbp3),
+                  use = "complete.obs")
+```
+
+```{r}
+fit_ar1 <- gls(SYSBP ~ factor(PERIOD) * SEX, 
+               data = framingham,
+               corr = corAR1(form = ~ PERIOD | RANDID),
+               method = "REML")
+summary(fit_ar1)
+```
+
+*2. Estimation method (15 points):* Select an estimation method and justify your choice. Report your parameter estimates ($\widehat{\beta}$) with standard errors, and the estimated covariance parameters.
+
+Questions:
+- how do i choose if I should do ML/REML or WLS/GEE?? Below I looked at the distribution of the errors. Is this what we should do?? I'm really not sure.
+- I ran some models on SAS, but I was just following the code from class. They were for ML with independent obs, ML with unstructured cov matrix, and REML with unstructured. There was no more example code so I assume we need to modify this to fit the estimatation method and the AR(1) covariance struture?
+
+```{r}
+# check if modelserrors are normally distributed
+res <- resid(fit_ar1, type = "normalized")
+hist(res)
+qqnorm(res)
+qqline(res)
+```
+
+
+
+# Variance Estimation
+
+*1. Comparison (10 points):* Compare the model-based and sandwich (robust) standard errors for your fixed effects. Create a table showing both sets of standard errors
+
+*2. Interpretation (10 points):* What do the differences (or similarities) between these standard errors suggest about your covariance model? Given your sample size, which variance estimator do you consider more appropriate for your analysis, and why?
+
+
+
+
+
+
+
+
+
+
+
+
+# Hypothesis Testing
+
+*1. Primary hypothesis (10 points):* State and test a hypothesis relevant to your research question using a Wald test. Report the test statistic, degrees of freedom, p-value, and interpret the result.
+
+*2. Additional test (10 points):* Conduct one additional hypothesis test (e.g., testing a different effect, or testing multiple parameters simultaneously). Report and interpret the results.
+
+# Summary and Interpretation
+
+Summarize your findings as you would for a collaborator. Address:
+
+* What model did you fit and why?
+* What are the key findings regarding your research question?
+* What assumptions are you making, and are they reasonable?
+
+
+
