@@ -11,14 +11,13 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(gt)
+library(kableExtra)
 ```
 
 ```{r}
 framingham <- read.csv("~/Desktop/UNC/Spring 2026/Bios 767/Homeworks/bios767finalproject/framingham.csv")
 framingham_wide <- read.csv("~/Desktop/UNC/Spring 2026/Bios 767/Homeworks/bios767finalproject/framingham_wide.csv")
 ```
-
-Sonia: please adjust anything I have done if you dont think its correct. Or if you're also not sure, you can make notes of things in the Rmd (and/or text me about them). I tried my best to follow the notes, but I may have misinterpreted what the questions are asking -- especially this first one.
 
 # Model Specification
 
@@ -30,40 +29,152 @@ Let $i=1,...,3206$ denote the subjects and let $j=0,6,12$ denote the year of the
 
 We have that $Y_i = (Y_{i0}, Y_{i6}, Y_{i12})^T$, $\beta = (\beta_0, \beta_1, \beta_2, \beta_3, \beta_4, \beta_5)^T$. We can write out the following:
 
-$$Y_{ij} = \beta_0 + \beta_1I(year=6) + \beta_2I(year = 12) + \beta_3I(female) + \beta_4I(female)I(year = 6) + \beta_5 I(female)I(year = 12 ) + \epsilon_{ij}$$
+$$Y_{ij} = \beta_0 + \beta_1I(\text{year}=6) + \beta_2I(\text{year}=12) + \beta_3I(\text{female}) + \beta_4I(\text{female})I(\text{year}=6) + \beta_5 I(\text{female})I(\text{year}=12) + \epsilon_{ij}$$
 * $\beta_0$ denotes the baseline mean SBP for males
 * $\beta_1$ denotes the change in mean SBP from baseline to year 6 for males
 * $\beta_2$ denotes the change in mean SBP from baseline to year 12 for males.
 * $\beta_3$ denotes the difference in mean SBP between females and males at baseline
-* $\beta_4$ denotes the change in the female-male gap from baseline to year 6
-* $\beta_5$ denotes the change in the female-male gap from baseline to year 12
+* $\beta_4$ denotes the difference in mean SBP between females and males at year 6
+* $\beta_5$ denotes the difference in mean SBP between females and males at year 12
 
 *2. Visualization (10 points):* Create a figure showing your observed data (e.g., individual trajectories or group means over time) along with the fitted mean structure from your model. Does the model appear to capture the patterns in your data?
 
-The figure below plots the observed data group means as solid lines and the fitted mean structure as dashed lines. The model appears to capture the difference in sex means, but underestimates the mean SBP for the first two visits. 
-
-*should I modifiy the mean model?? I'm not exactly sure on all of the steps here*
-Is this the plot they are asking us to make?
+The following code fits a WLS/GEE model with working independence and unstructured covariance. Then, we plot the observed data group means as solid lines and the fitted mean structure as dashed lines. The model appears to capture the difference in sex means, but it underestimates the mean SBP for the first two visits.
 
 ```{r}
-# build the fitted model (code from class)
-library(nlme)
-fit_sat <- gls(SYSBP ~ factor(PERIOD) * SEX, 
-               data = framingham,
-               corr = corSymm(form = ~ 1 | RANDID),
-               weights = varIdent(form = ~ 1 | PERIOD),
-               method = "ML")
-summary(fit_sat)
+# Pivot data to long form for model fitting
+framingham_long = framingham_wide %>% pivot_longer(sysbp1:sysbp3,
+                                                   names_to = "PERIOD", values_to = "SYSBP")
+framingham_long$PERIOD = rep(1:3,nrow(framingham_wide)) %>% factor(levels = c(1,2,3))
+framingham_long$SEX = (framingham_long$SEX == 2) %>% as.numeric()
+```
 
+```{r}
+# Set parameters
+nSub = nrow(framingham_wide)
+nVis = 3
+
+# Construct x matrix and y vector
+x = framingham_long
+x$Intercept = 1
+x$Year6 = (x$PERIOD == 2) %>% as.numeric()
+x$Year12 = (x$PERIOD == 3) %>% as.numeric()
+x$Female = x$SEX
+x$FemaleYear6 = x$Female * x$Year6
+x$FemaleYear12 = x$Female * x$Year12
+y = x$SYSBP
+x = x %>% select(Intercept:FemaleYear12) %>% as.matrix()
+```
+
+```{r}
+## WLS Code from Psioda tutorial ##
+
+iteration <- 0
+repeat
+{
+  ########################################################################
+  # initialize to WLS estimates assuming W=identity matrix
+  if (iteration==0)
+  {
+    beta.hat  <- solve(t(x)%*%x)%*%t(x)%*%y;
+    ImP       <- diag(nrow(x)) - x%*%solve(t(x)%*%x)%*%t(x)
+    W.hat     <- diag(c(t(y)%*%ImP%*%y / (nSub*nVis)),nrow=nVis,ncol=nVis)
+    sigma.hat <- W.hat
+  }
+  
+  # iterative process counter
+  iteration = iteration + 1  
+  
+  # compute inverse of current W.hat value
+  # to avoid repetitive computation
+  iW <- solve(W.hat)
+  
+  ########################################################################
+  # update beta.hat
+  beta.old <- beta.hat
+  
+  t1 <- 0
+  t2 <- 0
+	for (i in 1:nSub)
+	{	    
+	   idx <- (3*i-2):(3*i);
+			xi <- x[idx,];
+			yi <- y[idx];
+
+			t1 <- t1 + t(xi)%*%iW%*%xi;
+			t2 <- t2 + t(xi)%*%iW%*%yi;
+	}  
+	it1         <- solve(t1)
+	beta.hat    <- it1%*%t2
+	change.beta <- max(abs(beta.hat-beta.old))
+  ##########################################################
+	
+  ##########################################################
+  # update sigma.hat (unstructured)
+  sigma.old <- sigma.hat
+  
+  sigma.hat <- 0
+	for (i in 1:nSub)
+	{	    
+	   idx <- (3*i-2):(3*i);
+			xi <- x[idx,];
+			yi <- y[idx];
+
+		sigma.hat <- sigma.hat + 
+		             (yi-xi%*%beta.hat)%*%t(yi-xi%*%beta.hat) 
+	}
+  sigma.hat    <- sigma.hat/nSub
+	change.sigma <- max(abs(sigma.hat-sigma.old))	
+  iSigma <- solve(sigma.hat)
+	################################################
+	
+	######################################################
+	# compute covariance matrix for beta.hat (model-based)
+  t1 <- 0
+	for (i in 1:nSub)
+	{	    
+	   idx <- (3*i-2):(3*i);
+			xi <- x[idx,];
+			t1 <- t1 + t(xi)%*%iSigma%*%xi;
+	}  
+	cov.model  <- solve(t1)	
+	#######################################################
+	
+
+	######################################################
+	# compute covariance matrix for beta.hat (robust)
+	iGamma.star <- solve(t1);
+	
+  t2 <- 0
+	for (i in 1:nSub)
+	{	    
+	   idx <- (3*i-2):(3*i);
+			xi <- x[idx,];
+			yi <- y[idx];
+		  ri <- c(yi-xi%*%beta.hat)
+			t2 <- t2 + t(xi)%*%iSigma%*%ri%*%t(ri)%*%iSigma%*%xi;
+	}  
+  omega.star <- t2
+  cov.robust <- iGamma.star%*%omega.star%*%iGamma.star
+	#######################################################	
+	
+		
+  if (iteration==100) break
+	if (max(c(change.beta,change.sigma))<1e-10) break
+}
+```
+
+```{r}
 # make a df with the means for plotting
+x_rep = rbind(c(1,0,0,0,0,0),
+              c(1,1,0,0,0,0),
+              c(1,0,1,0,0,0),
+              c(1,0,0,1,0,0),
+              c(1,1,0,1,1,0),
+              c(1,0,1,1,0,1))
 fit_means <- data.frame(
   time = c(0, 6, 12, 0, 6, 12),
-  mean = c(129.65286,
-           134.08998,
-           139.20663,
-           131.73618,
-           136.47607,
-           141.09618),
+  mean = x_rep %*% beta.hat,
   sex = c("Male","Male","Male","Female","Female","Female")
 )
 ```
@@ -112,40 +223,180 @@ tab_dat %>% ggplot(aes(x = YEAR)) +
 # Estimation and Covariance Structure 
 *1. Covariance structure (15 points):* Select a covariance structure for $Var(\epsilon_i)$ and fit your model. Justify your choice based on what you observed in your data (e.g., from the sample correlation matrix or your understanding of the data-generating process).
 
-Below, we see the sample correlation matrices for SBP measurements at each visit. We see that measurements closer in time are more highly correlated (0.717 between baseline and 6 years compared to 0.618 between baseline and 12 years). We also find that SBP at 6 month has a higher correlation between baseline compared to 12 year. Based on this, we will choose AR(1) as our covariance structure for $Var(\epsilon_i)$ since we have equally spaced measurements with decaying correlation over time
+The following is the estimated correlation matrix for SBP measurements at each visit, constructed using an unstructured covariance structure.
 
 ```{r}
-cor(framingham_wide %>% select(sysbp1, sysbp2, sysbp3),
-                  use = "complete.obs")
+## compute final correlation matrix
+sigma.sd   <- sqrt(diag(sigma.hat))
+sigma.corr <- diag(1/sigma.sd)%*%sigma.hat%*%diag(1/sigma.sd)
+cat("Estimated Correlation Matrix (Unstructured):\n")
+print(sigma.corr)
 ```
 
-```{r}
-fit_ar1 <- gls(SYSBP ~ factor(PERIOD) * SEX, 
-               data = framingham,
-               corr = corAR1(form = ~ PERIOD | RANDID),
-               method = "REML")
-summary(fit_ar1)
-```
+We see that measurements closer in time are more highly correlated (0.717 between baseline and 6 years compared to 0.617 between baseline and 12 years). We also find that SBP at 6 years has a higher correlation with SBP at baseline compared to SBP at 12 years. Based on this, we will choose AR(1) as our covariance structure for $Var(\epsilon_i)$, since we have equally spaced measurements with decaying correlation over time.
+
 
 *2. Estimation method (15 points):* Select an estimation method and justify your choice. Report your parameter estimates ($\widehat{\beta}$) with standard errors, and the estimated covariance parameters.
 
-Questions:
-- how do i choose if I should do ML/REML or WLS/GEE?? Below I looked at the distribution of the errors. Is this what we should do?? I'm really not sure.
-- I ran some models on SAS, but I was just following the code from class. They were for ML with independent obs, ML with unstructured cov matrix, and REML with unstructured. There was no more example code so I assume we need to modify this to fit the estimatation method and the AR(1) covariance struture?
+The histograms of systolic blood pressure show that across all periods, the distribution of systolic blood pressure measurements is right-skewed. As such, it is not appropriate to assume that our response variable is normally distributed, so we have been using WLS/GEE as our estimation method, since it does not impose any distributional assumptions on the response variable.
+
+We will fit a WLS/GEE model, assuming an AR(1) covariance structure.
 
 ```{r}
-# check if modelserrors are normally distributed
-res <- resid(fit_ar1, type = "normalized")
-hist(res)
-qqnorm(res)
-qqline(res)
+framingham_long %>% ggplot(aes(x = SYSBP, fill = PERIOD)) + 
+  geom_histogram() + facet_grid(~PERIOD) +
+  ggtitle("Empirical Distribution of Systolic Blood Pressure by Period") +
+  xlab("Systolic Blood Pressure (mmHg)") + ylab("Count") +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
 ```
 
+```{r}
+iteration <- 0
+repeat
+{
+  ########################################################################
+  # initialize to WLS estimates assuming W=identity matrix
+  if (iteration==0)
+  {
+    beta.hat  <- solve(t(x)%*%x)%*%t(x)%*%y;
+    ImP       <- diag(nrow(x)) - x%*%solve(t(x)%*%x)%*%t(x)
+    W.hat     <- diag(c(t(y)%*%ImP%*%y / (nSub*nVis)),nrow=nVis,ncol=nVis)
+    sigma.hat <- W.hat
+  }
+  
+  # iterative process counter
+  iteration = iteration + 1  
+  
+  # compute inverse of current W.hat value
+  # to avoid repetitive computation
+  iW <- solve(W.hat)
+  
+  ########################################################################
+  # update beta.hat
+  beta.old <- beta.hat
+  
+  t1 <- 0
+  t2 <- 0
+	for (i in 1:nSub)
+	{	    
+	   idx <- (3*i-2):(3*i);
+			xi <- x[idx,];
+			yi <- y[idx];
+
+			t1 <- t1 + t(xi)%*%iW%*%xi;
+			t2 <- t2 + t(xi)%*%iW%*%yi;
+	}  
+	it1         <- solve(t1)
+	beta.hat    <- it1%*%t2
+	change.beta <- max(abs(beta.hat-beta.old))
+  ##########################################################
+	
+  ##########################################################
+  # update sigma.hat (AR(1))
+	
+	#############
+	### TO DO ###
+	#############
+	
+  sigma.old <- sigma.hat
+  
+  sigma.hat <- 0
+	for (i in 1:nSub)
+	{	    
+	   idx <- (3*i-2):(3*i);
+			xi <- x[idx,];
+			yi <- y[idx];
+
+		sigma.hat <- sigma.hat + ... 
+	}
+  sigma.hat    <- sigma.hat/nSub
+	change.sigma <- max(abs(sigma.hat-sigma.old))	
+  iSigma <- solve(sigma.hat)
+	################################################
+	
+	######################################################
+	# compute covariance matrix for beta.hat (model-based)
+  t1 <- 0
+	for (i in 1:nSub)
+	{	    
+	   idx <- (3*i-2):(3*i);
+			xi <- x[idx,];
+			t1 <- t1 + t(xi)%*%iSigma%*%xi;
+	}  
+	cov.model  <- solve(t1)	
+	#######################################################
+	
+
+	######################################################
+	# compute covariance matrix for beta.hat (robust)
+	iGamma.star <- solve(t1);
+	
+  t2 <- 0
+	for (i in 1:nSub)
+	{	    
+	   idx <- (3*i-2):(3*i);
+			xi <- x[idx,];
+			yi <- y[idx];
+		  ri <- c(yi-xi%*%beta.hat)
+			t2 <- t2 + t(xi)%*%iSigma%*%ri%*%t(ri)%*%iSigma%*%xi;
+	}  
+  omega.star <- t2
+  cov.robust <- iGamma.star%*%omega.star%*%iGamma.star
+	#######################################################	
+	
+		
+  if (iteration==100) break
+	if (max(c(change.beta,change.sigma))<1e-10) break
+}
+```
+
+```{r}
+cat("Estimated Covariance Matrix:")
+print(cov.model)
+```
+
+```{r}
+## Compute robust standard errors
+robust.se  <- sqrt(diag(cov.robust))
+z.robust   <- beta.hat / robust.se
+pv.robust  <- 2*pnorm(abs(z.robust), lower.tail = F)
+
+## Organize results into table
+res.robust <- data.frame(
+  'Estimate' = beta.hat, 'Robust.SE' = robust.se, 'Z.statistic' = z.robust, 'P-value' = pv.robust)
+
+round(res.robust, 4) %>% 
+    mutate_if(is.numeric, format, digits=4) %>% 
+    kbl(caption = "GEE Parameter Estimates / w Robust Standard Errors") %>% 
+    kable_styling('hover', full_width = T) %>%
+  footnote(general = paste("Algorithm converged after", iteration, "iterations. "),general_title = " " )
+```
 
 
 # Variance Estimation
 
 *1. Comparison (10 points):* Compare the model-based and sandwich (robust) standard errors for your fixed effects. Create a table showing both sets of standard errors
+
+```{r}
+## Compute model-based standard errors
+model.se  <- sqrt(diag(cov.model))
+z.model   <- beta.hat / model.se
+pv.model  <- 2*pnorm(abs(z.model), lower.tail = F)
+
+## Organize results into table
+res.compare <- data.frame(
+  'Estimate' = beta.hat, 
+  'Model.SE' = model.se, 'Model.Z' = z.model, 'Model.P' = pv.model,
+  'Robust.SE' = robust.se, 'Robust.Z' = z.robust, 'Robust.P' = pv.robust)
+
+
+round(res.compare , 4) %>% 
+    mutate_if(is.numeric, format, digits=4) %>% 
+    kbl(caption = "GEE Parameter Estimates / w Model-Based Standard Errors") %>% 
+    kable_styling('hover', full_width = T) %>%
+  footnote(general = paste("Algorithm converged after", iteration, "iterations. "),general_title = " " )
+```
+
 
 *2. Interpretation (10 points):* What do the differences (or similarities) between these standard errors suggest about your covariance model? Given your sample size, which variance estimator do you consider more appropriate for your analysis, and why?
 
