@@ -34,8 +34,8 @@ $$Y_{ij} = \beta_0 + \beta_1I(\text{year}=6) + \beta_2I(\text{year}=12) + \beta_
 * $\beta_1$ denotes the change in mean SBP from baseline to year 6 for males
 * $\beta_2$ denotes the change in mean SBP from baseline to year 12 for males.
 * $\beta_3$ denotes the difference in mean SBP between females and males at baseline
-* $\beta_4$ denotes the difference in mean SBP between females and males at year 6
-* $\beta_5$ denotes the difference in mean SBP between females and males at year 12
+* $\beta_4$ denotes the additional difference in mean SBP between females and males at year 6
+* $\beta_5$ denotes the additional difference in mean SBP between females and males at year 12
 
 *2. Visualization (10 points):* Create a figure showing your observed data (e.g., individual trajectories or group means over time) along with the fitted mean structure from your model. Does the model appear to capture the patterns in your data?
 
@@ -252,107 +252,125 @@ framingham_long %>% ggplot(aes(x = SYSBP, fill = PERIOD)) +
 
 ```{r}
 iteration <- 0
+
 repeat
 {
-  ########################################################################
-  # initialize to WLS estimates assuming W=identity matrix
-  if (iteration==0)
+  # initialize
+  if (iteration == 0)
   {
-    beta.hat  <- solve(t(x)%*%x)%*%t(x)%*%y;
-    ImP       <- diag(nrow(x)) - x%*%solve(t(x)%*%x)%*%t(x)
-    W.hat     <- diag(c(t(y)%*%ImP%*%y / (nSub*nVis)),nrow=nVis,ncol=nVis)
+    beta.hat <- solve(t(x) %*% x) %*% t(x) %*% y
+    ImP <- diag(nrow(x)) - x %*% solve(t(x) %*% x) %*% t(x)
+
+    s2 <- as.numeric(t(y) %*% ImP %*% y / (nSub * nVis))
+    W.hat <- diag(s2, nrow = nVis, ncol = nVis)
     sigma.hat <- W.hat
   }
-  
-  # iterative process counter
-  iteration = iteration + 1  
-  
-  # compute inverse of current W.hat value
-  # to avoid repetitive computation
+
+  iteration <- iteration + 1
+
+  # inverse working covariance
   iW <- solve(W.hat)
-  
-  ########################################################################
+
   # update beta.hat
   beta.old <- beta.hat
-  
+
   t1 <- 0
   t2 <- 0
-	for (i in 1:nSub)
-	{	    
-	   idx <- (3*i-2):(3*i);
-			xi <- x[idx,];
-			yi <- y[idx];
+  for (i in 1:nSub)
+  {
+    idx <- (nVis*i - (nVis - 1)):(nVis*i)
+    xi  <- x[idx, , drop = FALSE]
+    yi  <- matrix(y[idx], ncol = 1)
 
-			t1 <- t1 + t(xi)%*%iW%*%xi;
-			t2 <- t2 + t(xi)%*%iW%*%yi;
-	}  
-	it1         <- solve(t1)
-	beta.hat    <- it1%*%t2
-	change.beta <- max(abs(beta.hat-beta.old))
-  ##########################################################
-	
-  ##########################################################
-  # update sigma.hat (AR(1))
-	
-	#############
-	### TO DO ###
-	#############
-	
+    t1 <- t1 + t(xi) %*% iW %*% xi
+    t2 <- t2 + t(xi) %*% iW %*% yi
+  }
+
+  beta.hat <- solve(t1) %*% t2
+  change.beta <- max(abs(beta.hat - beta.old))
+
+  # update sigma.hat under AR(1)
   sigma.old <- sigma.hat
-  
-  sigma.hat <- 0
-	for (i in 1:nSub)
-	{	    
-	   idx <- (3*i-2):(3*i);
-			xi <- x[idx,];
-			yi <- y[idx];
 
-		sigma.hat <- sigma.hat + ... 
-	}
-  sigma.hat    <- sigma.hat/nSub
-	change.sigma <- max(abs(sigma.hat-sigma.old))	
+  R <- matrix(NA_real_, nrow = nSub, ncol = nVis)
+  for (i in 1:nSub)
+  {
+    idx <- (nVis*i - (nVis - 1)):(nVis*i)
+    xi  <- x[idx, , drop = FALSE]
+    yi  <- matrix(y[idx], ncol = 1)
+
+    ri <- yi - xi %*% beta.hat
+    R[i, ] <- c(ri)
+  }
+
+  sigma2.hat <- mean(R^2)
+
+  rho.num <- sum(R[,1] * R[,2] + R[,2] * R[,3])
+  rho.den <- sum(R[,1]^2 + R[,2]^2)
+  rho.hat <- rho.num / rho.den
+  rho.hat <- max(min(rho.hat, 0.99), -0.99)
+
+  sigma.hat <- sigma2.hat * matrix(
+    c(1, rho.hat, rho.hat^2,
+      rho.hat, 1, rho.hat,
+      rho.hat^2, rho.hat, 1),
+    nrow = nVis, byrow = TRUE
+  )
+
+  change.sigma <- max(abs(sigma.hat - sigma.old))
   iSigma <- solve(sigma.hat)
-	################################################
-	
-	######################################################
-	# compute covariance matrix for beta.hat (model-based)
-  t1 <- 0
-	for (i in 1:nSub)
-	{	    
-	   idx <- (3*i-2):(3*i);
-			xi <- x[idx,];
-			t1 <- t1 + t(xi)%*%iSigma%*%xi;
-	}  
-	cov.model  <- solve(t1)	
-	#######################################################
-	
 
-	######################################################
-	# compute covariance matrix for beta.hat (robust)
-	iGamma.star <- solve(t1);
-	
+  # model-based covariance
+  t1 <- 0
+  for (i in 1:nSub)
+  {
+    idx <- (nVis*i - (nVis - 1)):(nVis*i)
+    xi  <- x[idx, , drop = FALSE]
+    t1 <- t1 + t(xi) %*% iSigma %*% xi
+  }
+  cov.model <- solve(t1)
+
+  # robust covariance
+  iGamma.star <- solve(t1)
+
   t2 <- 0
-	for (i in 1:nSub)
-	{	    
-	   idx <- (3*i-2):(3*i);
-			xi <- x[idx,];
-			yi <- y[idx];
-		  ri <- c(yi-xi%*%beta.hat)
-			t2 <- t2 + t(xi)%*%iSigma%*%ri%*%t(ri)%*%iSigma%*%xi;
-	}  
+  for (i in 1:nSub)
+  {
+    idx <- (nVis*i - (nVis - 1)):(nVis*i)
+    xi  <- x[idx, , drop = FALSE]
+    yi  <- matrix(y[idx], ncol = 1)
+    ri  <- yi - xi %*% beta.hat
+
+    t2 <- t2 + t(xi) %*% iSigma %*% (ri %*% t(ri)) %*% iSigma %*% xi
+  }
+
   omega.star <- t2
-  cov.robust <- iGamma.star%*%omega.star%*%iGamma.star
-	#######################################################	
-	
-		
-  if (iteration==100) break
-	if (max(c(change.beta,change.sigma))<1e-10) break
+  cov.robust <- iGamma.star %*% omega.star %*% iGamma.star
+
+  # update working covariance for next iteration
+  W.hat <- sigma.hat
+
+  if (iteration == 100) break
+  if (max(c(change.beta, change.sigma)) < 1e-10) break
 }
 ```
 
+Below we have the estimated covariance paramters, the estimated covariance matrix, and the parameter estimates with standard errors.
+
 ```{r}
-cat("Estimated Covariance Matrix:")
-print(cov.model)
+# ----- Covariance parameters -----
+cov_results <- data.frame(
+  Parameter = c("rho", "sigma2", "sigma"),
+  Estimate = round(c(rho.hat, sigma2.hat, sqrt(sigma2.hat)), 4)
+)
+
+cat("\nEstimated covariance parameters:\n")
+print(cov_results)
+```
+
+```{r}
+cat("\nEstimated AR(1) covariance matrix:\n")
+print(round(sigma.hat, 4))
 ```
 
 ```{r}
@@ -377,6 +395,8 @@ round(res.robust, 4) %>%
 
 *1. Comparison (10 points):* Compare the model-based and sandwich (robust) standard errors for your fixed effects. Create a table showing both sets of standard errors
 
+We find that for almost all parameters, the robust standard errors are slightly smaller than the model-based standard errors. Also in general, the both standard errors are very similar. The largest absolute difference is approximately 0.13 between the intercept standard errors.
+
 ```{r}
 ## Compute model-based standard errors
 model.se  <- sqrt(diag(cov.model))
@@ -400,22 +420,21 @@ round(res.compare , 4) %>%
 
 *2. Interpretation (10 points):* What do the differences (or similarities) between these standard errors suggest about your covariance model? Given your sample size, which variance estimator do you consider more appropriate for your analysis, and why?
 
-
-
-
-
-
-
-
-
-
+Since most of the standard errors are similar, we can deduce that our working covariance model is reasonable and we can utilize our model based standard errors. Also note that we have a sample size of $n=3206$, so our sandwich estimators will not have small N bias. The model-based variance estimators are more appropriate for our analysis.
 
 
 # Hypothesis Testing
 
 *1. Primary hypothesis (10 points):* State and test a hypothesis relevant to your research question using a Wald test. Report the test statistic, degrees of freedom, p-value, and interpret the result.
 
+We will test whether males and females have the same mean SBP at each time point. Since we have a saturated mean model with reference cell coding we want to test if $H_0: \left( \begin{smallmatrix} \beta_3 \\ \beta_4 \\  \beta_5 \end{smallmatrix} \right) = \boldsymbol{0}$. We can also write this as $Q'\beta = \boldsymbol{0}$ where $Q' = \left( \begin{smallmatrix}  0 & 0 & 0 & 1 & 0 & 0\\ 0 & 0 & 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 & 0 & 1\end{smallmatrix} \right)$ and $\beta = (\beta_0, \beta_1, \beta_2, \beta_3, \beta_4, \beta_5)^T$.
+
+*need to find the code for the Wald test*
+
+
+
 *2. Additional test (10 points):* Conduct one additional hypothesis test (e.g., testing a different effect, or testing multiple parameters simultaneously). Report and interpret the results.
+
 
 # Summary and Interpretation
 
