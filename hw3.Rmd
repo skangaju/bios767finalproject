@@ -14,22 +14,19 @@ library(gt)
 library(kableExtra)
 ```
 
-```{r}
+```{r, include = FALSE}
 framingham <- read.csv("~/Desktop/UNC/Spring 2026/Bios 767/Homeworks/bios767finalproject/framingham.csv")
 framingham_wide <- read.csv("~/Desktop/UNC/Spring 2026/Bios 767/Homeworks/bios767finalproject/framingham_wide.csv")
 ```
 
 # Model Specification
 
-*1. Model formulation (10 points):* Write out your model in the form $Y_i = X_i\beta + \epsilon_i$. Describe your mean structure and identify each parameter in $\beta$. What does each parameter represent in the context of your research question?
+**1. Model formulation (10 points): Write out your model in the form $Y_i = X_i\beta + \epsilon_i$. Describe your mean structure and identify each parameter in $\beta$. What does each parameter represent in the context of your research question?**
 
-For the mean model, we will take the profile analysis (saturated mean model) approach. We will use reference cell coding. Since this is an observational study, we will not place a constraint on the baseline means and keep baseline as an outcome. This method allows group means (male/female) to differ at baseline.
+For the mean model, we will take the profile analysis (saturated mean model) approach. We will use reference cell coding. Since this is an observational study, we will not place a constraint on the baseline means and keep baseline as an outcome. This method allows group means (male/female) to differ at baseline. 
 
-Let $i=1,...,3206$ denote the subjects and let $j=0,6,12$ denote the year of the visit where 0 is the baseline. Recall that patients follow up every 6 years. All patients have a total of 3 visits.
+Let $i=1,...,3206$ denote the subjects and let $j=0,6,12$ denote the year of the visit where 0 is the baseline. Recall that patients follow up every 6 years. All patients have a total of 3 visits. We have that $Y_i = (Y_{i0}, Y_{i6}, Y_{i12})^T$, $\beta = (\beta_0, \beta_1, \beta_2, \beta_3, \beta_4, \beta_5)^T$. We can write out the following: $$Y_{ij} = \beta_0 + \beta_1I(\text{year}=6) + \beta_2I(\text{year}=12) + \beta_3I(\text{female}) + \beta_4I(\text{female})I(\text{year}=6) + \beta_5 I(\text{female})I(\text{year}=12) + \epsilon_{ij}$$
 
-We have that $Y_i = (Y_{i0}, Y_{i6}, Y_{i12})^T$, $\beta = (\beta_0, \beta_1, \beta_2, \beta_3, \beta_4, \beta_5)^T$. We can write out the following:
-
-$$Y_{ij} = \beta_0 + \beta_1I(\text{year}=6) + \beta_2I(\text{year}=12) + \beta_3I(\text{female}) + \beta_4I(\text{female})I(\text{year}=6) + \beta_5 I(\text{female})I(\text{year}=12) + \epsilon_{ij}$$
 * $\beta_0$ denotes the baseline mean SBP for males
 * $\beta_1$ denotes the change in mean SBP from baseline to year 6 for males
 * $\beta_2$ denotes the change in mean SBP from baseline to year 12 for males.
@@ -37,11 +34,11 @@ $$Y_{ij} = \beta_0 + \beta_1I(\text{year}=6) + \beta_2I(\text{year}=12) + \beta_
 * $\beta_4$ denotes the additional difference in mean SBP between females and males at year 6
 * $\beta_5$ denotes the additional difference in mean SBP between females and males at year 12
 
-*2. Visualization (10 points):* Create a figure showing your observed data (e.g., individual trajectories or group means over time) along with the fitted mean structure from your model. Does the model appear to capture the patterns in your data?
+**2. Visualization (10 points): Create a figure showing your observed data (e.g., individual trajectories or group means over time) along with the fitted mean structure from your model. Does the model appear to capture the patterns in your data?**
 
-The following code fits a WLS/GEE model with working independence and unstructured covariance. Then, we plot the observed data group means as solid lines and the fitted mean structure as dashed lines. The model appears to capture the difference in sex means, but it underestimates the mean SBP for the first two visits.
+We fit a WLS/GEE model with working independence and unstructured covariance. The plot below shows the observed data group means as solid lines and the fitted mean structure as dashed lines. The model appears to capture the difference in sex means, but it underestimates the mean SBP for the first two visits.
 
-```{r}
+```{r, include = FALSE}
 # Pivot data to long form for model fitting
 framingham_long = framingham_wide %>% pivot_longer(sysbp1:sysbp3,
                                                    names_to = "PERIOD", values_to = "SYSBP")
@@ -49,7 +46,7 @@ framingham_long$PERIOD = rep(1:3,nrow(framingham_wide)) %>% factor(levels = c(1,
 framingham_long$SEX = (framingham_long$SEX == 2) %>% as.numeric()
 ```
 
-```{r}
+```{r, include = FALSE}
 # Set parameters
 nSub = nrow(framingham_wide)
 nVis = 3
@@ -66,7 +63,7 @@ y = x$SYSBP
 x = x %>% select(Intercept:FemaleYear12) %>% as.matrix()
 ```
 
-```{r}
+```{r, include = FALSE}
 ## WLS Code from Psioda tutorial ##
 
 iteration <- 0
@@ -164,7 +161,7 @@ repeat
 }
 ```
 
-```{r}
+```{r, include = FALSE}
 # make a df with the means for plotting
 x_rep = rbind(c(1,0,0,0,0,0),
               c(1,1,0,0,0,0),
@@ -179,7 +176,7 @@ fit_means <- data.frame(
 )
 ```
 
-```{r}
+```{r, echo = FALSE}
 # plot from hw2
 tab_dat <- framingham %>%
   mutate(SEX = recode(as.character(SEX), `1` = "Male", `2` = "Female"),
@@ -221,11 +218,11 @@ tab_dat %>% ggplot(aes(x = YEAR)) +
 
 
 # Estimation and Covariance Structure 
-*1. Covariance structure (15 points):* Select a covariance structure for $Var(\epsilon_i)$ and fit your model. Justify your choice based on what you observed in your data (e.g., from the sample correlation matrix or your understanding of the data-generating process).
+**1. Covariance structure (15 points): Select a covariance structure for $Var(\epsilon_i)$ and fit your model. Justify your choice based on what you observed in your data (e.g., from the sample correlation matrix or your understanding of the data-generating process).**
 
 The following is the estimated correlation matrix for SBP measurements at each visit, constructed using an unstructured covariance structure.
 
-```{r}
+```{r, echo = FALSE}
 ## compute final correlation matrix
 sigma.sd   <- sqrt(diag(sigma.hat))
 sigma.corr <- diag(1/sigma.sd)%*%sigma.hat%*%diag(1/sigma.sd)
@@ -236,13 +233,13 @@ print(sigma.corr)
 We see that measurements closer in time are more highly correlated (0.717 between baseline and 6 years compared to 0.617 between baseline and 12 years). We also find that SBP at 6 years has a higher correlation with SBP at baseline compared to SBP at 12 years. Based on this, we will choose AR(1) as our covariance structure for $Var(\epsilon_i)$, since we have equally spaced measurements with decaying correlation over time.
 
 
-*2. Estimation method (15 points):* Select an estimation method and justify your choice. Report your parameter estimates ($\widehat{\beta}$) with standard errors, and the estimated covariance parameters.
+**2. Estimation method (15 points): Select an estimation method and justify your choice. Report your parameter estimates ($\widehat{\beta}$) with standard errors, and the estimated covariance parameters.**
 
 The histograms of systolic blood pressure show that across all periods, the distribution of systolic blood pressure measurements is right-skewed. As such, it is not appropriate to assume that our response variable is normally distributed, so we have been using WLS/GEE as our estimation method, since it does not impose any distributional assumptions on the response variable.
 
 We will fit a WLS/GEE model, assuming an AR(1) covariance structure.
 
-```{r}
+```{r, echo = FALSE, warning = FALSE}
 framingham_long %>% ggplot(aes(x = SYSBP, fill = PERIOD)) + 
   geom_histogram() + facet_grid(~PERIOD) +
   ggtitle("Empirical Distribution of Systolic Blood Pressure by Period") +
@@ -250,7 +247,7 @@ framingham_long %>% ggplot(aes(x = SYSBP, fill = PERIOD)) +
   theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
 ```
 
-```{r}
+```{r, include = FALSE}
 iteration <- 0
 
 repeat
@@ -357,7 +354,7 @@ repeat
 
 Below we have the estimated covariance paramters, the estimated covariance matrix, and the parameter estimates with standard errors.
 
-```{r}
+```{r, echo = FALSE}
 # ----- Covariance parameters -----
 cov_results <- data.frame(
   Parameter = c("rho", "sigma2", "sigma"),
@@ -368,12 +365,12 @@ cat("\nEstimated covariance parameters:\n")
 print(cov_results)
 ```
 
-```{r}
+```{r, echo = FALSE, warning = FALSE}
 cat("\nEstimated AR(1) covariance matrix:\n")
 print(round(sigma.hat, 4))
 ```
 
-```{r}
+```{r, echo = FALSE, warning = FALSE}
 ## Compute robust standard errors
 robust.se  <- sqrt(diag(cov.robust))
 z.robust   <- beta.hat / robust.se
@@ -393,11 +390,11 @@ round(res.robust, 4) %>%
 
 # Variance Estimation
 
-*1. Comparison (10 points):* Compare the model-based and sandwich (robust) standard errors for your fixed effects. Create a table showing both sets of standard errors
+**1. Comparison (10 points): Compare the model-based and sandwich (robust) standard errors for your fixed effects. Create a table showing both sets of standard errors**
 
 We find that for almost all parameters, the robust standard errors are slightly smaller than the model-based standard errors. Also in general, the both standard errors are very similar. The largest absolute difference is approximately 0.13 between the intercept standard errors.
 
-```{r}
+```{r, echo = FALSE, warning = FALSE}
 ## Compute model-based standard errors
 model.se  <- sqrt(diag(cov.model))
 z.model   <- beta.hat / model.se
@@ -418,22 +415,50 @@ round(res.compare , 4) %>%
 ```
 
 
-*2. Interpretation (10 points):* What do the differences (or similarities) between these standard errors suggest about your covariance model? Given your sample size, which variance estimator do you consider more appropriate for your analysis, and why?
+**2. Interpretation (10 points): What do the differences (or similarities) between these standard errors suggest about your covariance model? Given your sample size, which variance estimator do you consider more appropriate for your analysis, and why?**
 
 Since most of the standard errors are similar, we can deduce that our working covariance model is reasonable and we can utilize our model based standard errors. Also note that we have a sample size of $n=3206$, so our sandwich estimators will not have small N bias. The model-based variance estimators are more appropriate for our analysis.
 
 
 # Hypothesis Testing
 
-*1. Primary hypothesis (10 points):* State and test a hypothesis relevant to your research question using a Wald test. Report the test statistic, degrees of freedom, p-value, and interpret the result.
+**1. Primary hypothesis (10 points): State and test a hypothesis relevant to your research question using a Wald test. Report the test statistic, degrees of freedom, p-value, and interpret the result.**
 
-We will test whether males and females have the same mean SBP at each time point. Since we have a saturated mean model with reference cell coding we want to test if $H_0: \left( \begin{smallmatrix} \beta_3 \\ \beta_4 \\  \beta_5 \end{smallmatrix} \right) = \boldsymbol{0}$. We can also write this as $Q'\beta = \boldsymbol{0}$ where $Q' = \left( \begin{smallmatrix}  0 & 0 & 0 & 1 & 0 & 0\\ 0 & 0 & 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 & 0 & 1\end{smallmatrix} \right)$ and $\beta = (\beta_0, \beta_1, \beta_2, \beta_3, \beta_4, \beta_5)^T$.
+We will test whether males and females have the same mean SBP at each time point. Since we have a saturated mean model with reference cell coding we want to test if $$H_0: \left( \begin{smallmatrix} \beta_3 \\ \beta_4 \\  \beta_5 \end{smallmatrix} \right) = \boldsymbol{0}$$. We can also write this as $Q'\beta = \boldsymbol{0}$ where $Q' = \left( \begin{smallmatrix}  0 & 0 & 0 & 1 & 0 & 0\\ 0 & 0 & 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 & 0 & 1\end{smallmatrix} \right)$ and $\boldsymbol{\beta} = (\beta_0, \beta_1, \beta_2, \beta_3, \beta_4, \beta_5)^T$.
 
-*need to find the code for the Wald test*
+$T_W = (\boldsymbol{Q'}\widehat{\boldsymbol{\beta}})'[\boldsymbol{Q'}\widehat{Var}(\widehat{\boldsymbol{\beta}})Q]^{-1}(\boldsymbol{Q'}\widehat{\boldsymbol{\beta}})$ ~ $\chi^2_3$ under the $H_0$. 
+
+After running the test with 3 degrees of freedom, we get a test statistic of 8.49 and a p-value of 0.036. Since the p-value is $<0.05$ we reject the null hypothesis and conclude that males and females have different mean SBPs at each time point.
+
+
+```{r, echo = FALSE}
+# Q below is Q', but labeled as Q for ease of coding
+Q <- rbind(
+  c(0, 0, 0, 1, 0, 0),
+  c(0, 0, 0, 0, 1, 0),
+  c(0, 0, 0, 0, 0, 1)
+)
+
+# Wald statistic
+Qbeta <- Q %*% beta.hat
+VQ    <- Q %*% cov.robust %*% t(Q)
+
+Wald_stat <- as.numeric(t(Qbeta) %*% solve(VQ) %*% Qbeta)
+df_wald   <- qr(Q)$rank
+p_value   <- pchisq(Wald_stat, df = df_wald, lower.tail = FALSE)
+
+wald_results <- data.frame(
+  Statistic = Wald_stat,
+  DF = df_wald,
+  P_value = p_value
+)
+
+wald_results
+```
 
 
 
-*2. Additional test (10 points):* Conduct one additional hypothesis test (e.g., testing a different effect, or testing multiple parameters simultaneously). Report and interpret the results.
+**2. Additional test (10 points): Conduct one additional hypothesis test (e.g., testing a different effect, or testing multiple parameters simultaneously). Report and interpret the results.**
 
 
 # Summary and Interpretation
