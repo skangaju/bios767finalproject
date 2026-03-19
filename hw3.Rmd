@@ -33,6 +33,7 @@ Let $i=1,...,3206$ denote the subjects and let $j=0,6,12$ denote the year of the
 * $\beta_3$ denotes the difference in mean SBP between females and males at baseline
 * $\beta_4$ denotes the additional difference in mean SBP between females and males at year 6
 * $\beta_5$ denotes the additional difference in mean SBP between females and males at year 12
+* $E[\epsilon_{ij}] = 0$
 
 **2. Visualization (10 points): Create a figure showing your observed data (e.g., individual trajectories or group means over time) along with the fitted mean structure from your model. Does the model appear to capture the patterns in your data?**
 
@@ -94,7 +95,7 @@ repeat
   t2 <- 0
 	for (i in 1:nSub)
 	{	    
-	   idx <- (3*i-2):(3*i);
+	   idx <- (nVis*i - (nVis - 1)):(nVis*i);
 			xi <- x[idx,];
 			yi <- y[idx];
 
@@ -113,7 +114,7 @@ repeat
   sigma.hat <- 0
 	for (i in 1:nSub)
 	{	    
-	   idx <- (3*i-2):(3*i);
+	   idx <- (nVis*i - (nVis - 1)):(nVis*i);
 			xi <- x[idx,];
 			yi <- y[idx];
 
@@ -130,7 +131,7 @@ repeat
   t1 <- 0
 	for (i in 1:nSub)
 	{	    
-	   idx <- (3*i-2):(3*i);
+	   idx <- (nVis*i - (nVis - 1)):(nVis*i);
 			xi <- x[idx,];
 			t1 <- t1 + t(xi)%*%iSigma%*%xi;
 	}  
@@ -144,8 +145,8 @@ repeat
 	
   t2 <- 0
 	for (i in 1:nSub)
-	{	    
-	   idx <- (3*i-2):(3*i);
+	{	 
+	   idx <- (nVis*i - (nVis - 1)):(nVis*i);
 			xi <- x[idx,];
 			yi <- y[idx];
 		  ri <- c(yi-xi%*%beta.hat)
@@ -213,7 +214,6 @@ tab_dat %>% ggplot(aes(x = YEAR)) +
              shape = 1,
              size = 3)
 
-
 ```
 
 
@@ -239,7 +239,7 @@ The histograms of systolic blood pressure show that across all periods, the dist
 
 We will fit a WLS/GEE model, assuming an AR(1) covariance structure.
 
-```{r, echo = FALSE, warning = FALSE}
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
 framingham_long %>% ggplot(aes(x = SYSBP, fill = PERIOD)) + 
   geom_histogram() + facet_grid(~PERIOD) +
   ggtitle("Empirical Distribution of Systolic Blood Pressure by Period") +
@@ -402,16 +402,15 @@ pv.model  <- 2*pnorm(abs(z.model), lower.tail = F)
 
 ## Organize results into table
 res.compare <- data.frame(
-  'Estimate' = beta.hat, 
   'Model.SE' = model.se, 'Model.Z' = z.model, 'Model.P' = pv.model,
   'Robust.SE' = robust.se, 'Robust.Z' = z.robust, 'Robust.P' = pv.robust)
 
 
 round(res.compare , 4) %>% 
     mutate_if(is.numeric, format, digits=4) %>% 
-    kbl(caption = "GEE Parameter Estimates / w Model-Based Standard Errors") %>% 
+    kbl(caption = "GEE Standard Errors: Model-Based vs. Robust") %>% 
     kable_styling('hover', full_width = T) %>%
-  footnote(general = paste("Algorithm converged after", iteration, "iterations. "),general_title = " " )
+  footnote(general_title = " " )
 ```
 
 
@@ -426,9 +425,9 @@ Since most of the standard errors are similar, we can deduce that our working co
 
 We will test whether males and females have the same mean SBP at each time point. Since we have a saturated mean model with reference cell coding we want to test if $$H_0: \left( \begin{smallmatrix} \beta_3 \\ \beta_4 \\  \beta_5 \end{smallmatrix} \right) = \boldsymbol{0}$$. We can also write this as $Q'\beta = \boldsymbol{0}$ where $Q' = \left( \begin{smallmatrix}  0 & 0 & 0 & 1 & 0 & 0\\ 0 & 0 & 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 & 0 & 1\end{smallmatrix} \right)$ and $\boldsymbol{\beta} = (\beta_0, \beta_1, \beta_2, \beta_3, \beta_4, \beta_5)^T$.
 
-$T_W = (\boldsymbol{Q'}\widehat{\boldsymbol{\beta}})'[\boldsymbol{Q'}\widehat{Var}(\widehat{\boldsymbol{\beta}})Q]^{-1}(\boldsymbol{Q'}\widehat{\boldsymbol{\beta}})$ ~ $\chi^2_3$ under the $H_0$. 
+$T_W = (\boldsymbol{Q'}\widehat{\boldsymbol{\beta}})'[\boldsymbol{Q'}\widehat{Var}(\widehat{\boldsymbol{\beta}})Q]^{-1}(\boldsymbol{Q'}\widehat{\boldsymbol{\beta}})$ ~ $\chi^2_3$ under $H_0$. 
 
-After running the test with 3 degrees of freedom, we get a test statistic of 8.49 and a p-value of 0.036. Since the p-value is $<0.05$ we reject the null hypothesis and conclude that males and females have different mean SBPs at each time point.
+After running the test with 3 degrees of freedom, we get a test statistic of 8.49 and a p-value of 0.036. Since the p-value is $<0.05$, we reject the null hypothesis and conclude that males and females have different mean SBPs at each time point.
 
 
 ```{r, echo = FALSE}
@@ -460,6 +459,40 @@ wald_results
 
 **2. Additional test (10 points): Conduct one additional hypothesis test (e.g., testing a different effect, or testing multiple parameters simultaneously). Report and interpret the results.**
 
+We will test whether SBP changes over time. Since we have a saturated mean model with reference cell coding we want to test if $$H_0: \left( \begin{smallmatrix} \beta_1 \\ \beta_2 \\ \beta_4 \\ \beta_5 \end{smallmatrix} \right) = \boldsymbol{0}$$. We can also write this as $Q'\beta = \boldsymbol{0}$ where $Q' = \left( \begin{smallmatrix}  0 & 1 & 0 & 0 & 0 & 0\\ 0 & 0 & 1 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 & 0 & 1\end{smallmatrix} \right)$ and $\boldsymbol{\beta} = (\beta_0, \beta_1, \beta_2, \beta_3, \beta_4, \beta_5)^T$.
+
+$T_W = (\boldsymbol{Q'}\widehat{\boldsymbol{\beta}})'[\boldsymbol{Q'}\widehat{Var}(\widehat{\boldsymbol{\beta}})Q]^{-1}(\boldsymbol{Q'}\widehat{\boldsymbol{\beta}})$ ~ $\chi^2_4$ under $H_0$. 
+
+After running the test with 4 degrees of freedom, we get a test statistic of 944.26 and a p-value that is less than 0.0001. Since the p-value is $<0.05$, we reject the null hypothesis and conclude that SBP changes over time for at least one of the sex groups.
+
+
+```{r, echo = FALSE}
+# Q below is Q', but labeled as Q for ease of coding
+Q <- rbind(
+  c(0, 1, 0, 0, 0, 0),
+  c(0, 0, 1, 0, 0, 0),
+  c(0, 0, 0, 0, 1, 0),
+  c(0, 0, 0, 0, 0, 1)
+)
+
+# Wald statistic
+Qbeta <- Q %*% beta.hat
+VQ    <- Q %*% cov.robust %*% t(Q)
+
+Wald_stat <- as.numeric(t(Qbeta) %*% solve(VQ) %*% Qbeta)
+df_wald   <- qr(Q)$rank
+p_value   <- pchisq(Wald_stat, df = df_wald, lower.tail = FALSE)
+
+wald_results <- data.frame(
+  Statistic = Wald_stat,
+  DF = df_wald,
+  P_value = p_value
+)
+
+wald_results
+```
+
+
 
 # Summary and Interpretation
 
@@ -469,5 +502,7 @@ Summarize your findings as you would for a collaborator. Address:
 * What are the key findings regarding your research question?
 * What assumptions are you making, and are they reasonable?
 
+We fit a GEE model to our data, assuming an AR(1) covariance structure. This assumption is reasonable because the three time periods are equally spaced and, after fitting an initial WLS model with unstructured covariance, we see that the estimated correlation of SBP between different time periods decreases as the time periods get further apart. We estimated that the variance of SBP at each fixed time point is $463.8$ and that the correlation between SBP measures at time period $t$ and at time period $t+k$ is $0.744^k$ for $k \neq t$.
 
+Our hypothesis tests inform us that the population mean trajectories of SBP for woman and for men are different and that for at least one of the sex groups, SBP changes over time. We could further investigate whether or not the two population mean trajectories are parallel, which would indicate that SBP changes at the same rate in both sex groups.
 
