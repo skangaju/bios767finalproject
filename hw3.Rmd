@@ -19,6 +19,8 @@ framingham <- read.csv("~/Desktop/UNC/Spring 2026/Bios 767/Homeworks/bios767fina
 framingham_wide <- read.csv("~/Desktop/UNC/Spring 2026/Bios 767/Homeworks/bios767finalproject/framingham_wide.csv")
 ```
 
+Note: We have submitted the .Rmd file which contains all code used in this assignment.
+
 # Model Specification
 
 **1. Model formulation (10 points): Write out your model in the form $Y_i = X_i\beta + \epsilon_i$. Describe your mean structure and identify each parameter in $\beta$. What does each parameter represent in the context of your research question?**
@@ -416,8 +418,7 @@ round(res.compare , 4) %>%
 
 **2. Interpretation (10 points): What do the differences (or similarities) between these standard errors suggest about your covariance model? Given your sample size, which variance estimator do you consider more appropriate for your analysis, and why?**
 
-Since most of the standard errors are similar, we can deduce that our working covariance model is reasonable and we can utilize our model based standard errors. Also note that we have a sample size of $n=3206$, so our sandwich estimators will not have small N bias. The model-based variance estimators are more appropriate for our analysis.
-
+Since most of the standard errors are similar, we can deduce that our working covariance model is reasonable. Also note that we have a sample size of $n=3206$, so our sandwich estimators will not have small N bias. Even though it seems reasonable to use the model-based variance, we will still continue with the sandwich standard errors since it will protect our results in the case that the covariance model (AR(1)) is wrong. 
 
 # Hypothesis Testing
 
