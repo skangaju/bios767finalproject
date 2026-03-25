@@ -1,0 +1,136 @@
+---
+title: "Homework 4"
+author: "Sonia Kangaju & Abbey Skinner"
+date: "2026-03-27"
+output: pdf_document
+---
+
+```{r, include = FALSE}
+library(riskCommunicator)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(gt)
+library(kableExtra)
+library(gee)
+```
+
+```{r, include = FALSE}
+framingham <- read.csv("~/Desktop/UNC/Spring 2026/Bios 767/Homeworks/bios767finalproject/framingham.csv")
+framingham_wide <- read.csv("~/Desktop/UNC/Spring 2026/Bios 767/Homeworks/bios767finalproject/framingham_wide.csv")
+```
+
+
+# Mean Model Selection
+
+**1. Candidate mean structures (15 points): Fit at least three candidate mean models to your data. These might include a saturated (profile) model, polynomial models (linear, quadratic), or spline models. For each model, report the number of parameters and the log-likelihood.**
+
+```{r, include = FALSE}
+# Pivot data to long form for model fitting
+framingham_long = framingham_wide %>% pivot_longer(sysbp1:sysbp3,
+                                                   names_to = "PERIOD", values_to = "SYSBP")
+framingham_long$PERIOD = rep(1:3, nrow(framingham_wide)) %>% factor(levels = c(1,2,3))
+framingham_long$YEAR = rep(c(0,6,12), nrow(framingham_wide))
+framingham_long$SPLINE = pmax(framingham_long$YEAR - 6, 0)
+framingham_long$SEX = (framingham_long$SEX == 2) %>% as.numeric()
+```
+
+As established in the previous assignment, we will use AR(1) as our working covariance model to compare mean models. First, we fit a saturated model, where the time period is treated as a categorical variable.
+
+```{r, echo = FALSE}
+# Saturated model with working AR(1) covariance
+fit_sat = gee(SYSBP ~ PERIOD * SEX,
+              data = framingham_long,
+              id = RANDID,
+              corstr = "AR-M", Mv = 1)
+coef(summary(fit_sat))
+```
+
+Next, we fit a linear model, where time is treated as a continuous variable.
+
+```{r, echo = FALSE}
+# Linear model with working AR(1) covariance
+fit_linear = gee(SYSBP ~ YEAR * SEX,
+                 data = framingham_long,
+                 id = RANDID,
+                 corstr = "AR-M", Mv = 1)
+coef(summary(fit_linear))
+```
+
+Finally, we fit a linear spline model, with a knot at year 6.
+
+```{r, echo = FALSE}
+# Spline model with working AR(1) covariance
+fit_spline = gee(SYSBP ~ YEAR + SPLINE + SEX + YEAR:SEX + SPLINE:SEX,
+                 data = framingham_long,
+                 id = RANDID,
+                 corstr = "AR-M", Mv = 1)
+coef(summary(fit_spline))
+```
+
+Each model estimates a scale parameter and a correlation parameter that jointly define the AR(1) covariance structure. In addition to this, the saturated mean model consists of 6 parameters, the linear mean model consists of 4 parameters, and the spline mean model consists of 6 parameters. 
+
+These GEE models make no distributional assumptions about the outcome, so there are no log-likelihoods to report.
+
+**2. Model comparison (15 points): Compare your candidate mean models using appropriate criteria. Select a mean structure and justify your choice. If you conduct any hypothesis tests to compare nested models, explain your approach.**
+
+The linear model is nested in the spline model, so we can compare them using a Wald test with $H_0: \beta_{SPLINE} = \beta_{SPLINE:SEX} = 0$. We can also write this as $Q'\beta = \boldsymbol{0}$ where $Q' = \left( \begin{smallmatrix}  0 & 0 & 1 & 0 & 0 & 0\\ 0 & 0 & 0 & 0 & 0 & 1 \end{smallmatrix} \right)$ and $\boldsymbol{\beta} = (\beta_0, \beta_1, \beta_2, \beta_3, \beta_4, \beta_5)^T$.
+
+$T_W = (\boldsymbol{Q'}\widehat{\boldsymbol{\beta}})'[\boldsymbol{Q'}\widehat{Var}(\widehat{\boldsymbol{\beta}})Q]^{-1}(\boldsymbol{Q'}\widehat{\boldsymbol{\beta}})$ ~ $\chi^2_2$ under $H_0$. 
+
+After running the test with 2 degrees of freedom, we get a test statistic of 4.44 and a p-value of 0.108. Since the p-value is $>0.05$, we fail to reject the null hypothesis and conclude that the spline model does not explain significantly more of the variation in SBP over time, when compared to the linear model.
+
+```{r, echo = FALSE}
+# Q below is Q', but labeled as Q for ease of coding
+Q <- rbind(
+  c(0, 0, 1, 0, 0, 0),
+  c(0, 0, 0, 0, 0, 1)
+)
+beta.hat = fit_spline$coefficients
+cov.robust = fit_spline$robust.variance
+
+# Wald statistic
+Qbeta <- Q %*% beta.hat
+VQ    <- Q %*% cov.robust %*% t(Q)
+
+Wald_stat <- as.numeric(t(Qbeta) %*% solve(VQ) %*% Qbeta)
+df_wald   <- qr(Q)$rank
+p_value   <- pchisq(Wald_stat, df = df_wald, lower.tail = FALSE)
+
+wald_results <- data.frame(
+  Statistic = Wald_stat,
+  DF = df_wald,
+  P_value = p_value
+)
+
+wald_results
+```
+
+From here on, we compare the linear model to the saturated model. Since the GEE model is not likelihood-based and the two remaining models are non-nested, we will compare their goodness of fit using QIC.
+
+```{r}
+QIC(fit_sat, fit_linear)
+```
+
+The saturated model and the linear model, which suggests that neither model fits the data better than the other. In light of this, we will err on the side of caution and choose the model that imposes fewer assumptions on the shapes of the mean SBP profiles. Therefore, we will choose the saturated model as our final mean model.
+
+
+# Covariance Model Selection
+
+**1. Candidate covariance structures (15 points): Using your selected mean structure, fit your model with at least three different covariance structures. For each covariance structure, report the number of covariance parameters and the log-likelihood.**
+
+**2. Model comparison (15 points): Compare your candidate covariance structures using appropriate criteria. Select a covariance structure and justify your choice. If any comparisons involve testing whether a variance component equals zero, discuss how the boundary issue affects your approach.**
+
+
+# Final Model
+
+**1. Model specification (10 points): State your final model, including the mean structure and covariance structure. Explain why you chose these structures.**
+
+**2. Parameter estimates (15 points): Report the fixed effect estimates with standard errors and 95% confidence intervals. Report the covariance parameter estimates. Interpret the key parameters in the context of your research question.**
+
+
+# Visualization and Interpretation
+
+**1. Visualization (10 points): Create a figure showing the observed data (e.g., group means over time) overlaid with the fitted trajectories from your final model.**
+
+**2. Summary (5 points): In 1–2 paragraphs, summarize your model-building process and key findings as you would for a collaborator.**
