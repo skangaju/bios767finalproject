@@ -119,12 +119,65 @@ The saturated model and the linear model, which suggests that neither model fits
 
 **1. Candidate covariance structures (15 points): Using your selected mean structure, fit your model with at least three different covariance structures. For each covariance structure, report the number of covariance parameters and the log-likelihood.**
 
+As noted before, we will use the saturated model as our mean structure. The three covariance structures that we will test are AR(1) (used in mean model selection), unstructured, and compound symmetry.
+
+First we fit the model with AR(1). *get the info I need tomorrow*
+
+```{r}
+# AR(1)
+fit_ar1 <- gls(
+  SYSBP ~ PERIOD*SEX,
+  data = framingham_long,
+  corr = corAR1(form = ~ as.numeric(as.character(PERIOD)) | RANDID),
+  method = "REML"
+)
+
+summary(fit_ar1)
+```
+
+
+```{r}
+# Unstructured
+fit_un <- gls(
+  SYSBP ~ PERIOD*SEX,
+  data = framingham_long,
+  corr = corSymm(form = ~ 1 | RANDID),
+  weights = varIdent(form = ~ 1 | PERIOD),
+  method = "REML"
+)
+```
+
+```{r}
+# Compound Symmetry
+fit_cs <- gls(
+  SYSBP ~ PERIOD*SEX,
+  data = framingham_long,
+  corr = corCompSymm(form = ~ 1 | RANDID),
+  method = "REML"
+)
+```
+
+
 **2. Model comparison (15 points): Compare your candidate covariance structures using appropriate criteria. Select a covariance structure and justify your choice. If any comparisons involve testing whether a variance component equals zero, discuss how the boundary issue affects your approach.**
+
+Compound Symmetry and AR(1) are both nested within Unstructured covariance so we can compare these with REML LRT. To compared CS and AR(1) we need to use AIC since these are not nested.
+
+Note that using REML LRT is not valid with when we are testing that a variance component equals zero. This is becuase variances are bounded below by zero and when we test if a variance equals 0 this places the null hypothesis on the boundary of the parameter space. The LRT is only valid when the null value is on the interior of the parameter space, so this test is not valid in cases when a variance parameter equals 0. *answer if this happens in these tests*
+
+```{r}
+# compare CS and Toeplitz with REML LRT
+```
+
+```{r}
+# Compare xx and AR(1) with AIC
+```
 
 
 # Final Model
 
 **1. Model specification (10 points): State your final model, including the mean structure and covariance structure. Explain why you chose these structures.**
+
+Our final model uses the saturated model as the mean model and 
 
 **2. Parameter estimates (15 points): Report the fixed effect estimates with standard errors and 95% confidence intervals. Report the covariance parameter estimates. Interpret the key parameters in the context of your research question.**
 
