@@ -13,11 +13,13 @@ library(tidyr)
 library(gt)
 library(kableExtra)
 library(gee)
+library(MuMIn)
+library(nlme)
 ```
 
 ```{r, include = FALSE}
-framingham <- read.csv("~/Desktop/UNC/Spring 2026/Bios 767/Homeworks/bios767finalproject/framingham.csv")
-framingham_wide <- read.csv("~/Desktop/UNC/Spring 2026/Bios 767/Homeworks/bios767finalproject/framingham_wide.csv")
+framingham <- read.csv("framingham.csv")
+framingham_wide <- read.csv("framingham_wide.csv")
 ```
 
 
@@ -37,34 +39,44 @@ framingham_long$SEX = (framingham_long$SEX == 2) %>% as.numeric()
 
 As established in the previous assignment, we will use AR(1) as our working covariance model to compare mean models. First, we fit a saturated model, where the time period is treated as a categorical variable.
 
-```{r, echo = FALSE}
+```{r, include = FALSE}
 # Saturated model with working AR(1) covariance
 fit_sat = gee(SYSBP ~ PERIOD * SEX,
               data = framingham_long,
               id = RANDID,
               corstr = "AR-M", Mv = 1)
+```
+
+```{r, echo = FALSE}
 coef(summary(fit_sat))
 ```
 
+
 Next, we fit a linear model, where time is treated as a continuous variable.
 
-```{r, echo = FALSE}
+```{r, include = FALSE}
 # Linear model with working AR(1) covariance
 fit_linear = gee(SYSBP ~ YEAR * SEX,
                  data = framingham_long,
                  id = RANDID,
                  corstr = "AR-M", Mv = 1)
+```
+
+```{r, echo = FALSE}
 coef(summary(fit_linear))
 ```
 
 Finally, we fit a linear spline model, with a knot at year 6.
 
-```{r, echo = FALSE}
+```{r, include = FALSE}
 # Spline model with working AR(1) covariance
 fit_spline = gee(SYSBP ~ YEAR + SPLINE + SEX + YEAR:SEX + SPLINE:SEX,
                  data = framingham_long,
                  id = RANDID,
                  corstr = "AR-M", Mv = 1)
+```
+
+```{r, echo = FALSE}
 coef(summary(fit_spline))
 ```
 
@@ -112,7 +124,7 @@ From here on, we compare the linear model to the saturated model. Since the GEE 
 QIC(fit_sat, fit_linear)
 ```
 
-The saturated model and the linear model, which suggests that neither model fits the data better than the other. In light of this, we will err on the side of caution and choose the model that imposes fewer assumptions on the shapes of the mean SBP profiles. Therefore, we will choose the saturated model as our final mean model.
+The saturated model has a lower QIC than the linear model. Therefore, we will choose the saturated model as our final mean model.
 
 
 # Covariance Model Selection
@@ -159,6 +171,18 @@ model_summary <- data.frame(
 ```
 
 
+**2. Model comparison (15 points): Compare your candidate covariance structures using appropriate criteria. Select a covariance structure and justify your choice. If any comparisons involve testing whether a variance component equals zero, discuss how the boundary issue affects your approach.**
+
+Compound Symmetry and AR(1) are both nested within Unstructured covariance so we can compare these with REML LRT. To compare CS and AR(1) we need to use AIC since these are not nested. When comparing compound symmetry to unstructured, the REML LRT yields a test statistic of $226.98$ and a p-value of $<.0001$. The REML LRT for comparing AR(1) to unstructured yields a test statistics of $340.04$ and a p-value of $<.0001$. These tests tell us that in both cases, unstructured covariance is preferred over the simpler structures. For completeness, we found that AIC for CS is $82027.30$ and for AR(1) the AIC is $82140.36$, which leads to us choose compound symmetry over AR(1) since it has a smaller AIC. Based on all these criteria, we will choose unstructured covariance for our final model. Although it requires estimating more parameters, we found statistically significant evidence that estimating more parameters improves the fit of our model.
+
+Note that using REML LRT is not valid with when we are testing that a variance component equals zero. This is because variances are bounded below by zero, and when we test if a variance equals 0, this places the null hypothesis on the boundary of the parameter space. The LRT is only valid when the null value is on the interior of the parameter space, so this test is not valid in cases when a variance parameter equals 0. This does not arise in our case.
+
+```{r, echo = FALSE}
+# compare CS and AR(1) to unstructured
+anova(fit_cs, fit_un)
+anova(fit_ar1, fit_un)
+```
+
 ```{r, echo = FALSE}
 model_summary %>%
   gt() %>%
@@ -176,34 +200,24 @@ model_summary %>%
   fmt_number(
     columns = c(AIC, BIC, LogLik),
     decimals = 2
+  ) %>% 
+  tab_options(
+    heading.title.font.size = px(20),
+    latex.tbl.pos = "h"
   )
 ```
-
-
-**2. Model comparison (15 points): Compare your candidate covariance structures using appropriate criteria. Select a covariance structure and justify your choice. If any comparisons involve testing whether a variance component equals zero, discuss how the boundary issue affects your approach.**
-
-Compound Symmetry and AR(1) are both nested within Unstructured covariance so we can compare these with REML LRT. To compare CS and AR(1) we need to use AIC since these are not nested. When comparing compound symmetry to unstructured, the REML LRT yields a test statistic of $226.98$ and a p-value of $<.0001$. The REML LRT for comparing AR(1) to unstructured yields a test statistics of $340.04$ and a p-value of $<.0001$. These tests tell us that in both cases, unstructured covariance is preferred over the simpiler structures. For completeness, we found that AIC for CS is $82027.30$ and for AR(1) the AIC is $82140.36$ which leads to us choosing compound symmetry over AR(1) since it has a smaller AIC. Based on all these criteria, we will choose unstructured covariance for our final model. Although it requires estimating more paramters, we found statistically significant evidence that estimating more parameters improves our model.
-
-Note that using REML LRT is not valid with when we are testing that a variance component equals zero. This is becuase variances are bounded below by zero and when we test if a variance equals 0 this places the null hypothesis on the boundary of the parameter space. The LRT is only valid when the null value is on the interior of the parameter space, so this test is not valid in cases when a variance parameter equals 0. This does not arise in our case.
-
-```{r, include = FALSE}
-# compare CS and AR(1) to unstructured
-anova(fit_cs, fit_un)
-anova(fit_ar1, fit_un)
-```
-
 
 # Final Model
 
 **1. Model specification (10 points): State your final model, including the mean structure and covariance structure. Explain why you chose these structures.**
 
-Our final model uses the saturated model as the mean model and unstructured covariance for the covariance structure. We chose the saturated model since it imposes fewer assumptions than a linear model and we found that both the saturated model and the linear model fit the data similarly (when compared using QIC). We chose unstructured covariance since we found that it fits the data better than both compound symmetry and AR(1) when compared using REML LRT.
+Our final model uses the saturated model as the mean model and unstructured covariance for the covariance structure. We chose the saturated model since it has a lower QIC than the linear model. We chose unstructured covariance since we found that it fits the data better than both compound symmetry and AR(1) when compared using REML LRT.
 
 **2. Parameter estimates (15 points): Report the fixed effect estimates with standard errors and 95% confidence intervals. Report the covariance parameter estimates. Interpret the key parameters in the context of your research question.**
 
-Find all estimates, standard errors, 95% confidence intervals, and p-values in the table below. The estimated covariance matrix is provided below the table. $\widehat{\beta_0} = 129.02$ represents the mean SBP for males at the first visit. $\widehat{\beta_1} = 5.55$ and $\widehat{\beta_2} = 10.25$ represent the change in SBP from baseline to visits 2 and 3 respectively. $\widehat{\beta_4} = 1.92$ represents the difference in SBP between males and females at baseline. All of these terms are significant indicating significant differences in SBP both over time and between males and females (evaluated separately). $\widehat{\beta_5} = -0.01$ and $\widehat{\beta_6} = -0.34$ represents the difference in SBP between males and females at later visits. Neither of these terms is significant indicating that the difference in SBP between males and females does not change over time
+Find all estimates, standard errors, 95% confidence intervals, and p-values in the table below. The estimated covariance matrix is provided above the table. $\widehat{\beta_0} = 129.02$ represents the mean SBP for males at the first visit. $\widehat{\beta_1} = 5.55$ and $\widehat{\beta_2} = 10.25$ represent the change in SBP from baseline to visits 2 and 3 respectively. $\widehat{\beta_4} = 1.92$ represents the difference in SBP between males and females at baseline. All of these terms are significant, indicating significant differences in SBP both over time and between males and females (evaluated separately). $\widehat{\beta_5} = -0.01$ and $\widehat{\beta_6} = -0.34$ represents the difference in SBP between males and females at later visits. Neither of these terms is significant, indicating that the difference in SBP between males and females does not change over time.
 
-```{r, echo=FALSE}
+```{r, echo = FALSE}
 # Fixed effects summary
 beta_tab <- as.data.frame(summary(fit_un)$tTable)
 beta_tab$Term <- rownames(beta_tab)
@@ -245,11 +259,11 @@ fixed_effects_table %>%
   )
 ```
 
-```{r, echo=FALSE}
+```{r, echo = FALSE}
 # Residual SD
 sigma_hat <- fit_un$sigma
 
-# Variance multipliers (relative to reference timepoint)
+# Variance multipliers (relative to reference time point)
 var_weights <- coef(fit_un$modelStruct$varStruct, unconstrained = FALSE)
 
 # Correlation parameters
@@ -279,4 +293,67 @@ Sigma_hat
 
 **1. Visualization (10 points): Create a figure showing the observed data (e.g., group means over time) overlaid with the fitted trajectories from your final model.**
 
+The observed data trajectories are plotted with solid lines, and the fitted trajectories from the final model are plotted using dashed lines.
+
+```{r, include = FALSE}
+# Make a table with the sample means
+tab_dat <- framingham %>%
+  mutate(SEX = recode(as.character(SEX), `1` = "Male", `2` = "Female"),
+         YEAR = recode(PERIOD, `1` = 0, `2` = 6, `3` = 12)) %>%
+  group_by(YEAR, SEX) %>%
+  summarise(
+    mean_sbp = mean(SYSBP, na.rm = TRUE),
+    sd_sbp   = sd(SYSBP,   na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from  = SEX,
+    values_from = c(mean_sbp, sd_sbp),
+    names_glue  = "{SEX}_{.value}"
+  )
+
+# Make a df with the fitted means
+x_rep = rbind(c(1,0,0,0,0,0),
+              c(1,1,0,0,0,0),
+              c(1,0,1,0,0,0),
+              c(1,0,0,1,0,0),
+              c(1,1,0,1,1,0),
+              c(1,0,1,1,0,1))
+fit_means <- data.frame(
+  time = c(0, 6, 12, 0, 6, 12),
+  mean = x_rep %*% fit_un$coefficients,
+  sex = c("Male","Male","Male","Female","Female","Female")
+)
+```
+
+
+```{r, echo = FALSE}
+tab_dat %>% ggplot(aes(x = YEAR)) + 
+  geom_line(aes(y = Male_mean_sbp, color = "Male"), linewidth = 0.75) +
+  geom_point(aes(y = Male_mean_sbp), color = "green3", size = 2.5) +
+  geom_line(aes(y = Female_mean_sbp, color = "Female"), linewidth = 0.75) +
+  geom_point(aes(y = Female_mean_sbp), color = "blue3", size = 2.5) +
+  ggtitle("Mean Systolic Blood Pressure Over Time, By Sex") +
+  xlab("Year") + ylab("Mean Systolic Blood Pressure (mmHg)") +
+  scale_x_continuous(breaks = 0:12) + labs(color = "Sex") + 
+  scale_color_manual(values = c("Male" = "green3", "Female" = "blue3")) +
+  theme_minimal() + theme(plot.title = element_text(hjust = 0.5))+
+  # add the fitted lines 
+  geom_line(data = fit_means,
+            aes(x = time, y = mean, color = sex),
+            linetype = "dashed",
+            linewidth = 1.2) +
+  geom_point(data = fit_means,
+             aes(x = time, y = mean, color = sex),
+             shape = 1,
+             size = 3)
+```
+
+
 **2. Summary (5 points): In 1–2 paragraphs, summarize your model-building process and key findings as you would for a collaborator.**
+
+Our model-building process was conducted in two stages. In the first stage, we used GEE models to compare mean model structures using Wald tests and QIC. At the end of the comparison process, we found that a saturated model structure was the best fit for our data. In the second stage, we used GLS models to compare covariance model structures using REML LRT and AIC. At the end of the comparison process, we found that an unstructured covariance model was the best fit for our data. Our final model is a GLS model that combines the saturated mean model and the unstructured covariance model to fit population mean SBP trajectories for both males and females.
+
+We found that when sex is fixed, mean SPB increases by about 5.55 mm/Hg after 6 years past baseline, and it increases by about 10.25 mm/Hg after 12 years past baseline. Both of these time effects were found to be statistically significant, which suggests that on average, systolic blood pressure worsens with age for both males and females. We also found a statistically significant difference in SBP between males and females at each time point: an increase of about 1.92 mm/Hg for females when compared to males. This suggests that on average, females have higher systolic blood pressure than males at any given time period. Lastly, the interaction effect between sex and time period was not found to be statistically significant, which suggests that the rate of change of SBP over time does not differ between the sexes.
+
+
