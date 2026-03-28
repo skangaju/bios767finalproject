@@ -119,11 +119,9 @@ The saturated model and the linear model, which suggests that neither model fits
 
 **1. Candidate covariance structures (15 points): Using your selected mean structure, fit your model with at least three different covariance structures. For each covariance structure, report the number of covariance parameters and the log-likelihood.**
 
-As noted before, we will use the saturated model as our mean structure. The three covariance structures that we will test are AR(1) (used in mean model selection), unstructured, and compound symmetry.
+As noted before, we will use the saturated model as our mean structure. The three covariance structures that we will test are AR(1) (used in mean model selection), unstructured, and compound symmetry. Both the AR(1) and compound symmetry models estimate 2 covariance parameters, $\sigma^2$ and $\rho$. The unstructured covariance model estimates $n(n+1)/2 = 3(4)/2 = 6$ covariance parameters. The table below gives the AIC, BIC, and REML log-likelihood that each model yields.
 
-First we fit the model with AR(1). *get the info I need tomorrow*
-
-```{r}
+```{r, include = FALSE}
 # AR(1)
 fit_ar1 <- gls(
   SYSBP ~ PERIOD*SEX,
@@ -132,11 +130,6 @@ fit_ar1 <- gls(
   method = "REML"
 )
 
-summary(fit_ar1)
-```
-
-
-```{r}
 # Unstructured
 fit_un <- gls(
   SYSBP ~ PERIOD*SEX,
@@ -145,9 +138,7 @@ fit_un <- gls(
   weights = varIdent(form = ~ 1 | PERIOD),
   method = "REML"
 )
-```
 
-```{r}
 # Compound Symmetry
 fit_cs <- gls(
   SYSBP ~ PERIOD*SEX,
@@ -155,21 +146,50 @@ fit_cs <- gls(
   corr = corCompSymm(form = ~ 1 | RANDID),
   method = "REML"
 )
+
+model_summary <- data.frame(
+  Model = c("Compound Symmetry", "AR(1)", "Unstructured"),
+  Cov_Params = c(2, 2, 6),
+  AIC = c(AIC(fit_cs), AIC(fit_ar1), AIC(fit_un)),
+  BIC = c(BIC(fit_cs), BIC(fit_ar1), BIC(fit_un)),
+  LogLik = c(as.numeric(logLik(fit_cs)),
+             as.numeric(logLik(fit_ar1)),
+             as.numeric(logLik(fit_un)))
+)
+```
+
+
+```{r, echo = FALSE}
+model_summary %>%
+  gt() %>%
+  tab_header(
+    title = "Model Comparison",
+    subtitle = "Covariance Structure Selection"
+  ) %>%
+  cols_label(
+    Model = "Covariance Structure",
+    Cov_Params = "# Cov Params",
+    AIC = "AIC",
+    BIC = "BIC",
+    LogLik = "Log-Likelihood"
+  ) %>%
+  fmt_number(
+    columns = c(AIC, BIC, LogLik),
+    decimals = 2
+  )
 ```
 
 
 **2. Model comparison (15 points): Compare your candidate covariance structures using appropriate criteria. Select a covariance structure and justify your choice. If any comparisons involve testing whether a variance component equals zero, discuss how the boundary issue affects your approach.**
 
-Compound Symmetry and AR(1) are both nested within Unstructured covariance so we can compare these with REML LRT. To compared CS and AR(1) we need to use AIC since these are not nested.
+Compound Symmetry and AR(1) are both nested within Unstructured covariance so we can compare these with REML LRT. To compare CS and AR(1) we need to use AIC since these are not nested. When comparing compound symmetry to unstructured, the REML LRT yields a test statistic of $226.98$ and a p-value of $<.0001$. The REML LRT for comparing AR(1) to unstructured yields a test statistics of $340.04$ and a p-value of $<.0001$. These tests tell us that in both cases, unstructured covariance is preferred over the simpiler structures. For completeness, we found that AIC for CS is $82027.30$ and for AR(1) the AIC is $82140.36$ which leads to us choosing compound symmetry over AR(1) since it has a smaller AIC. Based on all these criteria, we will choose unstructured covariance for our final model. Although it requires estimating more paramters, we found statistically significant evidence that estimating more parameters improves our model.
 
-Note that using REML LRT is not valid with when we are testing that a variance component equals zero. This is becuase variances are bounded below by zero and when we test if a variance equals 0 this places the null hypothesis on the boundary of the parameter space. The LRT is only valid when the null value is on the interior of the parameter space, so this test is not valid in cases when a variance parameter equals 0. *answer if this happens in these tests*
+Note that using REML LRT is not valid with when we are testing that a variance component equals zero. This is becuase variances are bounded below by zero and when we test if a variance equals 0 this places the null hypothesis on the boundary of the parameter space. The LRT is only valid when the null value is on the interior of the parameter space, so this test is not valid in cases when a variance parameter equals 0. This does not arise in our case.
 
-```{r}
-# compare CS and Toeplitz with REML LRT
-```
-
-```{r}
-# Compare xx and AR(1) with AIC
+```{r, include = FALSE}
+# compare CS and AR(1) to unstructured
+anova(fit_cs, fit_un)
+anova(fit_ar1, fit_un)
 ```
 
 
@@ -177,9 +197,82 @@ Note that using REML LRT is not valid with when we are testing that a variance c
 
 **1. Model specification (10 points): State your final model, including the mean structure and covariance structure. Explain why you chose these structures.**
 
-Our final model uses the saturated model as the mean model and 
+Our final model uses the saturated model as the mean model and unstructured covariance for the covariance structure. We chose the saturated model since it imposes fewer assumptions than a linear model and we found that both the saturated model and the linear model fit the data similarly (when compared using QIC). We chose unstructured covariance since we found that it fits the data better than both compound symmetry and AR(1) when compared using REML LRT.
 
 **2. Parameter estimates (15 points): Report the fixed effect estimates with standard errors and 95% confidence intervals. Report the covariance parameter estimates. Interpret the key parameters in the context of your research question.**
+
+Find all estimates, standard errors, 95% confidence intervals, and p-values in the table below. The estimated covariance matrix is provided below the table. $\widehat{\beta_0} = 129.02$ represents the mean SBP for males at the first visit. $\widehat{\beta_1} = 5.55$ and $\widehat{\beta_2} = 10.25$ represent the change in SBP from baseline to visits 2 and 3 respectively. $\widehat{\beta_4} = 1.92$ represents the difference in SBP between males and females at baseline. All of these terms are significant indicating significant differences in SBP both over time and between males and females (evaluated separately). $\widehat{\beta_5} = -0.01$ and $\widehat{\beta_6} = -0.34$ represents the difference in SBP between males and females at later visits. Neither of these terms is significant indicating that the difference in SBP between males and females does not change over time
+
+```{r, echo=FALSE}
+# Fixed effects summary
+beta_tab <- as.data.frame(summary(fit_un)$tTable)
+beta_tab$Term <- rownames(beta_tab)
+rownames(beta_tab) <- NULL
+
+# Confidence intervals
+beta_ci <- as.data.frame(intervals(fit_un, which = "coef")$coef)
+beta_ci$Term <- rownames(beta_ci)
+rownames(beta_ci) <- NULL
+
+# Merge into one clean table
+fixed_effects_table <- beta_tab %>%
+  select(Term, Value, Std.Error, `p-value`) %>%
+  left_join(beta_ci %>% select(Term, lower, upper), by = "Term") %>%
+  rename(
+    Estimate = Value,
+    SE = Std.Error,
+    p_value = `p-value`,
+    CI_lower = lower,
+    CI_upper = upper
+  )
+
+fixed_effects_table %>%
+  gt() %>%
+  tab_header(
+    title = "Final Model",
+    subtitle = "Saturated Mean Model, Unstructured Covariance"
+  ) %>%
+  cols_label(
+    Estimate = "Estimate",
+    SE = "Standard Error",
+    p_value = "P-Value",
+    CI_lower = "CI-Lower",
+    CI_upper = "CI-Upper"
+  ) %>%
+  fmt_number(
+    columns = c(Estimate, SE, p_value, CI_lower, CI_upper),
+    decimals = 2
+  )
+```
+
+```{r, echo=FALSE}
+# Residual SD
+sigma_hat <- fit_un$sigma
+
+# Variance multipliers (relative to reference timepoint)
+var_weights <- coef(fit_un$modelStruct$varStruct, unconstrained = FALSE)
+
+# Correlation parameters
+cor_params <- coef(fit_un$modelStruct$corStruct, unconstrained = FALSE)
+
+# Variances
+var_mult <- c(1, var_weights)^2
+vars <- sigma_hat^2 * var_mult
+
+# Correlation matrix
+R_hat <- matrix(c(
+  1,             cor_params[1], cor_params[2],
+  cor_params[1], 1,             cor_params[3],
+  cor_params[2], cor_params[3], 1
+), nrow = 3, byrow = TRUE)
+
+# Covariance matrix
+D_half <- diag(sqrt(vars))
+Sigma_hat <- D_half %*% R_hat %*% D_half
+
+Sigma_hat
+```
+
 
 
 # Visualization and Interpretation
