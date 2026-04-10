@@ -13,6 +13,7 @@ library(tidyr)
 library(gt)
 library(kableExtra)
 library(nlme)
+library(HLMdiag)
 ```
 
 ```{r, include = FALSE}
@@ -38,7 +39,9 @@ Our linear mixed effects model is as follows:
 
 $$Y_i = \beta_0 + \beta_1 x_{i,\text{YEAR}} + \beta_2 x_{i,\text{SEX}} + b_{i0} + b_{i1} x_{i,\text{YEAR}} + \epsilon_i$$
 
-We include a random intercept since previous analyses have demonstrated that males and females have different systolic blood pressure levels at baseline, on average. This random intercept will capture individual variation in baseline SBP levels.
+The fixed effect is $X_i\beta = \beta_0 + \beta_1x_{i,year} + \beta_2x_{i,sex}$. The random effect is $Z_ib_i = b_{i0} + b_{i1}x_{i,year}$ which represent a random intercept and a random slope for time. We assume that $b_i \sim N(0, D)$ and $\epsilon_i \sim N(0, R_i)$ where $b_i$ independent of $\epsilon_i$ and $D$ and $R_i$ cannot both be unstructured covariance matrices.
+
+We include a random intercept to allow each subject to have their own baseline SBP level which will capture individual variation in baseline SBPs after accounting for sex and time.
 
 Our previous analyses have also shown that systolic blood pressure increases over time at the same rate for males and for females on average, but it is plausible that on an individual level, time still has a different effect on each subject's SBP levels, so our model includes a random slope for the number of years since baseline.
 
@@ -87,7 +90,8 @@ cat("Likelihood Ratio Test:")
 data.frame("chi^2" = LRT.stat,
            "p" = 1 - 0.5 * (pchisq(LRT.stat, 1) + pchisq(LRT.stat, 2)))
 ```
-The $p$-value for the likelihood ratio test is less than 0.05, so we reject the null hypothesis and conclude that the variance of the random slope effect for time is not zero. Therefore, the random effect should remain in the model.
+
+The LRT test stat is $146.23$ and yields a $p$-value less than 0.05, so we reject the null hypothesis and conclude that the variance of the random slope effect for time is not zero. Therefore, the random effect should remain in the model.
 
 **2. Variance components interpretation (10 points): Interpret the estimated variance components. What do they tell you about the sources of variability in your data (between-subject vs. within-subject)?**
 
@@ -99,33 +103,32 @@ The estimated covariance between the random intercepts and the random slopes is 
 
 The estimated conditional variance of SBP at each time point is $129.45$, meaning that after random effects are accounted for, the standard deviation of SBP levels at each fixed time point is $\sqrt{129.45} = 11.378$.
 
-Since the variance of the random intercepts is greater than the conditional variance of SBP, we know that the overall variability in SBP is due more to between-subject variation due less to within-subject variation.
+Since the variance of the random intercepts is greater than the conditional variance of SBP, we know that the overall variability in SBP is due more to between-subject variation and due less to within-subject variation.
 
 
 # Subject-Specific Predictions
 
 **1. BLUPs (10 points): Obtain the predicted random effects (empirical BLUPs) for each subject. Create a figure displaying these predictions (e.g., a caterpillar plot or histogram of random intercepts/slopes).**
 
-We use the `predict` function to compute the predicted random effects for the model. We plot their empirical distributions below.
+We use the `ranef`` function to compute the predicted random effects for the model which include the random intercept and the random slope for year. We plot their empirical distributions below.
 
 ```{r, include = FALSE}
-e.blup = predict(lme.rand.slope, newdata = framingham_long)
-blup.df = data.frame(Year = framingham_long$YEAR %>% as.factor(), blup = e.blup)
+re <- ranef(lme.rand.slope)
+re$RANDID <- rownames(re)
 ```
 
 ```{r, echo = FALSE, message = FALSE, fig.height = 3.75}
-blup.df %>% ggplot(aes(x = blup)) + geom_histogram(fill="red3") +
-  ggtitle("Distribution of Empirical BLUPs for Systolic Blood Pressure") +
-  xlab("Predicted Systolic Blood Pressure (mmHg)") + ylab("Count") +
-  theme_minimal() + theme(plot.title = element_text(hjust = 0.5))
-```
+ggplot(re, aes(x = `(Intercept)`)) +
+  geom_histogram(fill = "red3", bins = 30) +
+  theme_minimal() +
+  labs(title = "Empirical BLUPs: Random Intercepts",
+       x = "Estimated random intercept", y = "Count")
 
-```{r, echo = FALSE, fig.height = 3.75}
-blup.df %>% ggplot(aes(x = Year, y = blup, fill = Year)) + geom_boxplot() +
-  ggtitle("Distribution of Empirical BLUPs for Systolic Blood Pressure by Year") +
-  ylab("Predicted Systolic Blood Pressure (mmHg)") +
-  theme_minimal() + theme(plot.title = element_text(hjust = 0.5),
-                          legend.position = "none")
+ggplot(re, aes(x = YEAR)) +
+  geom_histogram(fill = "blue3", bins = 30) +
+  theme_minimal() +
+  labs(title = "Empirical BLUPs: Random Slopes for YEAR",
+       x = "Estimated random slope", y = "Count")
 ```
 
 **2. Subject-specific trajectories (10 points): For a subset of subjects, plot the observed data along with the subject-specific fitted trajectories. Comment on how well the model captures individual patterns.**
@@ -133,15 +136,18 @@ blup.df %>% ggplot(aes(x = Year, y = blup, fill = Year)) + geom_boxplot() +
 For four randomly selected patients, we plot their observed data with a solid green line and their subject-specific mean trajectory with a blue dotted line.
 
 ```{r, echo = FALSE}
+ss_preds = predict(lme.rand.slope, newdata = framingham_long)
+predictions.df = data.frame(Year = framingham_long$YEAR %>% as.factor(), ss_pred = ss_preds)
+
 set.seed(12)
 subj_ids = sample(1:3206, 4, replace = FALSE)
-blup_idx = c()
-for (i in 1:4) { blup_idx = c(blup_idx, (3*subj_ids[i] - 2):(3*subj_ids[i])) }
+ss_preds_idx = c()
+for (i in 1:4) { ss_preds_idx = c(ss_preds_idx, (3*subj_ids[i] - 2):(3*subj_ids[i])) }
 
-ssmt = data.frame(ID = framingham_long$RANDID[blup_idx],
-                  Year = framingham_long$YEAR[blup_idx],
-                  SBP_True = framingham_long$SYSBP[blup_idx],
-                  SBP_Pred = e.blup[blup_idx])
+ssmt = data.frame(ID = framingham_long$RANDID[ss_preds_idx],
+                  Year = framingham_long$YEAR[ss_preds_idx],
+                  SBP_True = framingham_long$SYSBP[ss_preds_idx],
+                  SBP_Pred = ss_preds[ss_preds_idx])
 
 ssmt %>% ggplot(aes(x = Year, group = ID)) + facet_wrap(~ID, nrow = 2) +
   geom_line(aes(y = SBP_True, color = "Observed"), linewidth = 0.75) + 
@@ -155,7 +161,7 @@ ssmt %>% ggplot(aes(x = Year, group = ID)) + facet_wrap(~ID, nrow = 2) +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-For two of the patients, the upward trend of the SSMT matches the general upward trend of the observed data. For the other two patients, however, the SSMT is a poor fit, since the trajectory of the observed data for the top left patient is nonlinear, and the trajectory of the observed data for the top right patient is a downward trend.
+For two of the patients, the upward trend of the SSMT matches the general upward trend of the observed data. For the other two patients, however, the SSMT is a poor fit, since the trajectory of the observed data for the bottom left patient is nonlinear, and the trajectory of the observed data for the bottom right patient is a downward trend.
 
 Thus we see that the model does not always capture individual trends well, but this is to be expected in the context of our analysis, where thousands of patients were tracked over twelve years, which leaves plenty of room for individual deviations from the average trends in SBP over time.
 
@@ -164,8 +170,73 @@ Thus we see that the model does not always capture individual trends well, but t
 
 **1. Residual analysis (10 points): Examine the residuals from your model. Create appropriate diagnostic plots and comment on whether the model assumptions appear to be met.**
 
+To examine the residuals we check a few different plots. First, we can look at the residuals verses fitted plot. Ideally, we want this plot to be centered around 0 and to show no patterns. Looking at the plot, it does seem to be centered around 0, however as the fitted values increase, there is more of a deviation away from the 0 line. This suggests potential heteroskedasticity
+
+```{r, echo = FALSE}
+# fitted values and normalized residuals
+fitted_vals <- fitted(lme.rand.slope)
+resid_norm  <- resid(lme.rand.slope, type = "normalized")
+
+# Residuals vs fitted
+plot(lme.rand.slope)
+```
+
+Next, we can look at the QQ plots for the residuals, random intercepts, and the random slopes. We want these plots to look approximatley linear with minimal tail deviations. Looking at all three plots below, we see larger deviations on the tails than we would like. This suggests that the assumption of normality for both the errors and random effects may be violated.
+
+```{r, , echo = FALSE}
+# QQ plot of residuals
+qqnorm(resid_norm)
+qqline(resid_norm, col = "red")
+
+qqnorm(re[["(Intercept)"]], main = "QQ Plot: Random Intercepts")
+qqline(re[["(Intercept)"]], col = "red")
+
+qqnorm(re[["YEAR"]], main = "QQ Plot: Random Slopes")
+qqline(re[["YEAR"]], col = "red")
+```
 
 **2. Influence diagnostics (10 points): Conduct influence diagnostics to identify any subjects with unusual influence on the model fit. Describe what you found and discuss whether any observations warrant further investigation.**
+
+In order to test the influence, we will first find the observations that have the most extreme random intercepts and random slopes. Then, one at a time, we will refit the model on our sample that leaves one of these extreme points out. We compare the original effects to the effects of each of these models to see if there are any drastic changes. The table below depicts the absolute difference in the estimates from the original model and the leave-one-out models. Overall, the differences are quite small numbers. We find that the subject 5491585 has the greatest influence on the intercept and the sex coefficient, however these changes are relatively small in magnitude indicating that this subject does not meaninfully alter the conclusions of the analysis.
+
+```{r, echo=FALSE}
+extreme_ids <- unique(c(
+  re$RANDID[order(abs(re$`(Intercept)`), decreasing = TRUE)[1:5]],
+  re$RANDID[order(abs(re$YEAR), decreasing = TRUE)[1:5]]
+))
+
+orig_fe <- fixed.effects(lme.rand.slope)
+
+loo_results <- lapply(extreme_ids, function(id) {
+  fit_loo <- update(
+    lme.rand.slope,
+    data = framingham_long %>% filter(RANDID != id)
+  )
+  
+  fe <- fixed.effects(fit_loo)
+  
+  data.frame(
+    RANDID = id,
+    t(as.numeric(fe - orig_fe))   # differences!
+  )
+})
+
+loo_df <- bind_rows(loo_results)
+colnames(loo_df)[-1] <- paste0("diff_", names(orig_fe))
+
+loo_df %>% mutate(
+  diff_int = abs(`diff_(Intercept)`),
+  diff_year = abs(diff_YEAR),
+  diff_sex = abs(diff_SEX)
+) %>% select(c(RANDID, diff_int, diff_year, diff_sex)) %>%
+  rename(
+   "Intercept"= diff_int ,
+    "Year Coefficient" = diff_year,
+    "Sex Coefficeint" = diff_sex,
+   "ID" = RANDID
+  )
+```
+
 
 
 # Summary and Interpretation
@@ -174,4 +245,14 @@ Thus we see that the model does not always capture individual trends well, but t
 **- What is your fitted model and what random effects structure did you choose?**
 **- What are the key findings regarding your research question?**
 **- Are there any concerns about model fit or influential observations?**
+
+After a thorough investigation of the data, the fitted model we chose is a linear mixed effects model that includes both a random intercept and a random slope for year. We chose a model with these random effects in order to account for individual variation of both baseline SBP and the effect of time on SBP. The likelihood ratio test confirmed that the random slope for time was necessary. We specify the model as follows: $$Y_i = \beta_0 + \beta_1 x_{i,\text{YEAR}} + \beta_2 x_{i,\text{SEX}} + b_{i0} + b_{i1} x_{i,\text{YEAR}} + \epsilon_i$$
+
+The fitted linear mixed effects model indicates that SBP increases over time on average and that there is a difference in the SBP between males and females. The relatively large variance of the random intercepts compared to the residual variance suggests that between subject variability in the baseline SBP is a major source of variation in the data.
+
+The diagnostic plots suggest that there are some departures from the model's assumptions, namely possible heteroskedasticy and deviations from the normality assumptions for both the residuals and the random effects. These patterns suggest that the model may not be fully capturing the underlying data structure.
+
+Lastly, we found a handful of data points that could be considered influential observations, but after leave-one-out analyses, we found that these points led to small changes in the model's estimates. This suggests that no single subject has a strong influence on the model.
+
+
 
