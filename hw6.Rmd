@@ -208,7 +208,7 @@ se_compare_table_pdf <- se_compare_table %>%
     `Robust SE` = robust_se
   )
 
-gee_table_pdf %>%
+se_compare_table_pdf %>%
   kbl(
     format = "latex",
     booktabs = TRUE,
