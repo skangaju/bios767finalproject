@@ -238,11 +238,11 @@ The model-based standard errors are similar to the robust standard errors. The b
 # Hypothesis Testing and Interpretation (20 points)
 1. Hypothesis test (10 points): State and test a hypothesis relevant to your research question. Report the test statistic, degrees of freedom, p-value, and interpret the result.
 
-We will test to see if there is a sex effect. Our hypotheses are $H_0: \beta_2=0$ vs $H_1: \beta_2 \neq 0$. We will look at compound symmetry, sex row of Table 2 to find the relevant statistics to report for this test. This test has 1 degree of freedom and yields a test statistic of $7.59$ and a p-value of $0.0059$. Since the p-value is $< 0.05$ we will reject the $H_0$. We claim that there is a significant difference in the mean SBP between males and females.
+We will test to see if there is a sex effect. Our hypotheses are $H_0: \beta_2=0$ vs $H_1: \beta_2 \neq 0$. We will look at compound symmetry, sex row of Table 1 to find the relevant statistics to report for this test. This test has 1 degree of freedom and yields a test statistic of $7.59$ and a p-value of $0.0059$. Since the p-value is $< 0.05$ we will reject the $H_0$. We claim that there is a significant difference in the mean SBP between males and females.
 
 2. Interpretation of effects (10 points): Interpret your key parameter estimates in the context of your research question. Be specific about the population-averaged interpretation (e.g., for a binary outcome with logit link, interpret in terms of odds ratios at the population level).
 
-The compound symmetry section of Table 2 presents the parameter estimates discussed below:
+The compound symmetry section of Table 1 presents the parameter estimates discussed below:
 
 * $\beta_0 = 129.263$ represents the population-averaged mean SBP at baseline for males
 * $\beta_1 = 0.838$ indicates that, on average, SBP increases by about 0.838 mmHG per year at the population level
