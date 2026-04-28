@@ -1,0 +1,76 @@
+---
+title: "Homework 7"
+author: "Sonia Kangaju & Abbey Skinner"
+date: "2026-04-28"
+output: pdf_document
+---
+
+```{r, include = FALSE}
+library(riskCommunicator)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(gt)
+library(kableExtra)
+library(lme4)
+library(GLMMadaptive)
+```
+
+```{r, include = FALSE}
+framingham <- read.csv("framingham.csv")
+framingham_wide <- read.csv("framingham_wide.csv")
+```
+
+```{r, include = FALSE}
+# Pivot data to long form for model fitting
+framingham_long = framingham_wide %>% 
+  pivot_longer(sysbp1:sysbp3,names_to = "PERIOD", values_to = "SYSBP")
+framingham_long$PERIOD = rep(1:3, nrow(framingham_wide)) %>% factor(levels = c(1,2,3))
+framingham_long$YEAR = rep(c(0,6,12), nrow(framingham_wide))
+framingham_long$SPLINE = pmax(framingham_long$YEAR - 6, 0)
+framingham_long$SEX = (framingham_long$SEX == 2) %>% as.numeric()
+```
+
+# Model Specification (25 points)
+
+1. Model formulation (15 points): Write out your generalized linear mixed model. Specify the link function, the fixed effects, and the random effects structure. What assumptions are you making about the distribution of the random effects?
+
+2. Conditional distribution (10 points): State the conditional distribution of the response given the random effects. Explain what it means that responses are assumed independent conditional on the random effects.
+
+
+# Model Fitting and Random Effects (25 points)
+
+1. Fitting the model (10 points): Fit your GLMM using an appropriate estimation method. Report the fixed effect estimates with standard errors and the estimated variance components.
+
+```{r}
+fit <- glmer(SYSBP ~ SEX + YEAR + (1 + YEAR | RANDID),
+             data = framingham_long,
+             family = gaussian(link = "identity"))
+```
+
+
+2. Random effects structure (15 points): Justify your choice of random effects structure (e.g., random intercepts only, or random intercepts and slopes). If you considered alternative random effects structures, describe how you made your selection.
+
+
+# Interpretation (25 points)
+
+1. Subject-specific interpretation (15 points): Interpret your key fixed effect estimates. Be specific that these are subject-specific (conditional) interpretations. For example, for a binary outcome with logit link, interpret in terms of odds ratios for a given individual, holding the random effect constant.
+
+2. Comparison to GEE (10 points): Compare your GLMM parameter estimates to the GEE estimates from Assignment 6. Are the estimates similar or different? Explain why the parameters from these two approaches have different interpretations.
+
+
+# Random Effects Predictions (15 points)
+
+1. Predicted random effects (10 points): Obtain the predicted random effects for each subject. Create a figure displaying these predictions (e.g., a histogram or caterpillar plot).
+
+2. Subject-specific probabilities or rates (5 points): For a few selected subjects, compute and display the predicted subject-specific response probabilities (for binary outcomes) or rates (for count outcomes) over time.
+
+
+# Summary (10 points)
+
+Summarize your findings as you would for a collaborator. Address:
+
+* What model did you fit and what random effects structure did you use?
+* What are the key findings regarding your research question?
+* When would you prefer GLMM over GEE (or vice versa) for your data?
+
