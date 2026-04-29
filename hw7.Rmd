@@ -12,7 +12,6 @@ library(dplyr)
 library(tidyr)
 library(gt)
 library(kableExtra)
-library(lme4)
 library(GLMMadaptive)
 ```
 
@@ -35,17 +34,45 @@ framingham_long$SEX = (framingham_long$SEX == 2) %>% as.numeric()
 
 1. Model formulation (15 points): Write out your generalized linear mixed model. Specify the link function, the fixed effects, and the random effects structure. What assumptions are you making about the distribution of the random effects?
 
+Our generalized linear mixed effects model is as follows:
+
+$$g(E[Y_i|b_i]) = \beta_0 + \beta_1 x_{i,\text{YEAR}} + \beta_2 x_{i,\text{SEX}} + b_{i0} + b_{i1} x_{i,\text{YEAR}}$$
+
+where $b_i = (b_{i0} \; b_{i1}) \sim N(0,D)$.
+
+We use the log link function ($g(x) = \log x$). The fixed effect is $X_i\beta = \beta_0 + \beta_1 x_{i,\text{YEAR}} + \beta_2 x_{i,\text{SEX}}$. The random effect is $Z_ib_i = b_{i0} + b_{i1} x_{i,\text{YEAR}}$, which represents a random intercept and a random slope for time. We assume that $b_i \sim N(0, D)$ and $\epsilon_i \sim N(0, R_i)$ where $b_i$ independent of $\epsilon_i$ and $D$ and $R_i$ cannot both be unstructured covariance matrices.
+
+We include a random intercept to allow each subject to have their own baseline SBP level which will capture individual variation in baseline SBPs after accounting for sex and time.
+
+Our previous analyses have also shown that systolic blood pressure increases over time at the same rate for males and for females on average, but it is plausible that on an individual level, time still has a different effect on each subject's SBP levels, so our model includes a random slope for the number of years since baseline.
+
 2. Conditional distribution (10 points): State the conditional distribution of the response given the random effects. Explain what it means that responses are assumed independent conditional on the random effects.
 
+Since our data is strictly positive and right-skewed, we model it using a gamma distribution.
+
+\begin{align*}
+f(Y_{ij}|b_i) &= \frac{\lambda^r}{\Gamma(r)} y_{ij}^{r-1} e^{-\lambda y_{ij}} \\[5pt]
+&= \exp\left((r-1)\log y_{ij} - \lambda y_{ij} + r\log\lambda - \log\Gamma(a)\right) \\[5pt]
+&= \exp\left(\frac{\frac{\lambda}{r}y_{ij} - \log\frac{\lambda}{r}}{-\frac{1}{r}} - \frac{\log r}{-\frac{1}{r}} + (r-1)\log y_{ij} - \log\Gamma(r)\right) \\[5pt]
+&= \exp\left(\frac{y_{ij}\theta_{ij}(b_i) - \psi(\theta_{ij}(b_i))}{a(\phi)} + c(y_{ij},\phi)\right)
+\end{align*}
+
+where $\theta_{ij}(b_i) = \frac{\lambda}{r}$, $\psi(\theta_{ij}(b_i)) = \log\theta_{ij}(b_i)$, $\phi = \frac{1}{r}$, and $c(y_{ij},\phi) = \frac{1-\phi}{\phi}\log y_{ij} - \log\Gamma(\frac{1}{\phi}) - \frac{1}{\phi}\log\phi$.
+
+Note that, by the model's construction, all responses from the same subject $i$ share the same random effect $b_i$. Said random effect captures the correlations between all responses from subject $i$. Therefore, given all of the random effects $b_i$, the responses are assumed to be independent, since all of the covariances are accounted for.
 
 # Model Fitting and Random Effects (25 points)
 
 1. Fitting the model (10 points): Fit your GLMM using an appropriate estimation method. Report the fixed effect estimates with standard errors and the estimated variance components.
 
-```{r}
-fit <- glmer(SYSBP ~ SEX + YEAR + (1 + YEAR | RANDID),
-             data = framingham_long,
-             family = gaussian(link = "identity"))
+Below we fit the generalized linear mixed effects model specified in the previous section.
+
+```{r, echo = FALSE}
+glmm_fit <- mixed_model(fixed = SYSBP ~ SEX + YEAR,
+                        random = ~ 1 + YEAR | RANDID,
+                        data = framingham_long,
+                        family = Gamma(link = "log"))
+summary(glmm_fit)
 ```
 
 
