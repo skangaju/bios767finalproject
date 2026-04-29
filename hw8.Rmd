@@ -1,0 +1,122 @@
+---
+title: "Homework 8: Synthesis of Longitudinal Data Analysis Methods"
+author: "Sonia Kangaju & Abbey Skinner"
+date: "2026-05-01"
+output: pdf_document
+---
+
+For each of seven longitudinal data analysis methods, we address the following points:
+
+1. Outcome type. What types of outcomes can this method handle (e.g., continuous, binary, count)?
+2. Model and assumptions. Write out the model equation. State the key assumptions, including any distributional assumptions on the errors or random effects.
+3. How is time treated? Is time treated as discrete (categorical) or continuous? What does this imply about the kinds of time structures the method can accommodate?
+4. Covariance structure. What covariance structures are available or assumed by this method? Is the structure flexible or restricted?
+5. Population-mean trajectory. Can the method produce a population-mean trajectory? (Yes/No.) If yes, how is it obtained?
+6. Subject-specific trajectory. Can the method produce a subject-specific trajectory? (Yes/No.) If yes, how is it obtained?
+7. Hypothesis testing. What hypothesis tests are available? State the null hypothesis for the key tests (e.g., tests for time effect, group effect, interaction). How are the tests conducted?
+8. Estimation and software. What estimation method is used (e.g., OLS, ML, REML, GEE)? What functions in R and/or SAS are used for estimation and hypothesis testing?
+9. Missing data. Does the method require complete data? If it can accommodate missing data, under what assumption — MCAR, MAR, or MNAR — are the estimators valid?
+
+# Repeated Measures ANOVA
+
+* Outcome Type: Continuous
+
+* Model and Assumptions: $Y_i = \mu + X_{i}\beta + J_n b_i + \varepsilon_{i}$
+  * $Y_i$ is the outcome for subject $i$
+  * $X_i$ is the vector of covariates for subject $i$
+  * $\mu$ is the grand mean
+  * $\beta = (\alpha \; \theta \; \gamma)$ is the vector of true model coefficients, where $\alpha$ are the main effects of the covariates, $\theta$ are the main effects of the time periods, and $\gamma$ are the interaction effects between the covariates and the time periods
+  * $J_n$ is the $n\times 1$ vector of ones
+  * $b_i \sim N(0, \sigma^2_b)$
+  * $\varepsilon_{i} \sim N(0, \sigma^2_e I_n)$
+  * $b_i \perp \varepsilon_i$.
+  * $\varepsilon_i \perp \varepsilon_j \; \forall \; i \neq j$
+  
+* Treatment of Time: Time is treated as discrete, and the model captures averages changes in the outcome between each time point and a reference time point. The actual length of time between time points does not enter into the model. Because of this structure, this method cannot accommodate time structures with unevenly spaced time points.
+
+* Covariance Structure: $\text{Var}(Y_i) = \text{Var}(\mu + X_i\beta + J_n b_i + \varepsilon_i) = J_n\text{Var}(b_i)J_n^\prime + \text{Var}(\varepsilon_i) = \sigma^2_b J_n J_n^\prime + \sigma^2_e I_n$, so compound symmetry is assumed by the model structure and cannot be modified, making it more restrictive than methods like the general linear model, where the covariance structure can be modified to fit the correlation patterns exhibited by the data.
+
+* Population Mean Trajectory: $E[Y_i] = E[\mu + X_i\beta + J_n b_i + \varepsilon_i] = \mu + X_i\beta$
+
+* Subject-Specific Mean Trajectory: $E[Y_i|b_i] = E[\mu + X_i\beta + J_n b_i + \varepsilon_i|b_i] = \mu + X_i\beta + J_n b_i$
+
+* Hypothesis Testing: We test $H_0: C_{c\times H} M_{H\times n} U_{n\times n} = 0_{c\times n}$, where $C$ is the contrast for the hypothesis test, $M$ is the matrix of cell means, and $U$ is a matrix that defines the linear combinations of cell means that are being tested.
+  * To test if there is an interaction effect between the group effect and the time effect, test $H_0: \gamma_{hj} = 0 \; \forall \; j$.
+  * Assuming that there are no interaction effects, to test the group effect, test $H_0: \alpha_h = 0$.
+  * Assuming that there are no interaction effects, to test the time effect, test $H_0: \beta_j = 0 \; \forall \; j$.
+
+* Estimation and Software:
+
+* Missing Data: This method requires complete cases; as such, it cannot handle missing data. 
+
+# MANOVA
+
+* Outcome Type:
+* Model and Assumptions:
+* Treatment of Time:
+* Covariance Structure:
+* Population Mean Trajectory:
+* Subject-Specific Mean Trajectory:
+* Hypothesis Testing:
+* Estimation and Software:
+* Missing Data:
+
+# General Linear Model (GLM)
+
+* Outcome Type:
+* Model and Assumptions:
+* Treatment of Time:
+* Covariance Structure:
+* Population Mean Trajectory:
+* Subject-Specific Mean Trajectory:
+* Hypothesis Testing:
+* Estimation and Software:
+* Missing Data:
+
+# Linear Mixed Effects Model (LME)
+
+* Outcome Type:
+* Model and Assumptions:
+* Treatment of Time:
+* Covariance Structure:
+* Population Mean Trajectory:
+* Subject-Specific Mean Trajectory:
+* Hypothesis Testing:
+* Estimation and Software:
+* Missing Data:
+
+# Marginal Models
+
+* Outcome Type:
+* Model and Assumptions:
+* Treatment of Time:
+* Covariance Structure:
+* Population Mean Trajectory:
+* Subject-Specific Mean Trajectory:
+* Hypothesis Testing:
+* Estimation and Software:
+* Missing Data:
+
+# Generalized Linear Mixed Effects Model (GLMM)
+
+* Outcome Type: Continuous, binary, or count
+* Model and Assumptions: $g(E[Y_i|b_i]) = X_i\beta + Z_ib_i$
+* Treatment of Time: Time is treated as a continuous variable which enters the model as a covariate in $X_i$ (and potentially also in $Z_i$).
+* Covariance Structure:
+* Population Mean Trajectory:
+* Subject-Specific Mean Trajectory:
+* Hypothesis Testing:
+* Estimation and Software:
+* Missing Data:
+
+# Nonlinear Mixed Effects Model (NLME)
+
+* Outcome Type:
+* Model and Assumptions:
+* Treatment of Time:
+* Covariance Structure:
+* Population Mean Trajectory:
+* Subject-Specific Mean Trajectory:
+* Hypothesis Testing:
+* Estimation and Software:
+* Missing Data:
