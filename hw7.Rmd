@@ -1,7 +1,7 @@
 ---
 title: "Homework 7"
 author: "Sonia Kangaju & Abbey Skinner"
-date: "2026-04-28"
+date: "2026-05-01"
 output: pdf_document
 ---
 
@@ -30,67 +30,168 @@ framingham_long$SPLINE = pmax(framingham_long$YEAR - 6, 0)
 framingham_long$SEX = (framingham_long$SEX == 2) %>% as.numeric()
 ```
 
+
 # Model Specification (25 points)
 
 1. Model formulation (15 points): Write out your generalized linear mixed model. Specify the link function, the fixed effects, and the random effects structure. What assumptions are you making about the distribution of the random effects?
 
 Our generalized linear mixed effects model is as follows:
 
-$$g(E[Y_ij|b_i]) = \beta_0 + \beta_1 x_{i,\text{YEAR}} + \beta_2 x_{i,\text{SEX}} + b_{i0} + b_{i1} x_{i,\text{YEAR}}$$
+$$g(E[Y_{ij}|b_i]) = \beta_0 + \beta_1 x_{i,\text{YEAR}} + \beta_2 x_{i,\text{SEX}} + b_{i0} + b_{i1} x_{i,\text{YEAR}}$$
 
-where $b_i = (b_{i0} \; b_{i1}) \sim N(0,D)$.
+where $b_i = (b_{i0} \; b_{i1}) \sim N(0,D)$. We use the log link function ($g(x) = \log x$). The fixed effect is $X_i\beta = \beta_0 + \beta_1 x_{i,\text{YEAR}} + \beta_2 x_{i,\text{SEX}}$. The random effect is $Z_ib_i = b_{i0} + b_{i1} x_{i,\text{YEAR}}$, which represents a random intercept and a random slope for time. 
 
-We use the log link function ($g(x) = \log x$). The fixed effect is $X_i\beta = \beta_0 + \beta_1 x_{i,\text{YEAR}} + \beta_2 x_{i,\text{SEX}}$. The random effect is $Z_ib_i = b_{i0} + b_{i1} x_{i,\text{YEAR}}$, which represents a random intercept and a random slope for time. We assume that $b_i \sim N(0, D)$ and $\epsilon_i \sim N(0, R_i)$ where $b_i$ independent of $\epsilon_i$ and $D$ and $R_i$ cannot both be unstructured covariance matrices.
-
-We include a random intercept to allow each subject to have their own baseline SBP level which will capture individual variation in baseline SBPs after accounting for sex and time.
+We include a random intercept to allow each subject to have their own baseline SBP level, which will capture individual variation in baseline SBPs after accounting for sex and time.
 
 Our previous analyses have also shown that systolic blood pressure increases over time at the same rate for males and for females on average, but it is plausible that on an individual level, time still has a different effect on each subject's SBP levels, so our model includes a random slope for the number of years since baseline.
 
 2. Conditional distribution (10 points): State the conditional distribution of the response given the random effects. Explain what it means that responses are assumed independent conditional on the random effects.
 
-Since our data is strictly positive and right-skewed, we model it using a gamma distribution
+Since our data is strictly positive and right-skewed, we model it using a shifted gamma distribution. Let $m$ be the minimum systolic blood pressure measure in the data. If we let $\delta > 0$ be arbitrarily small, then we have
 
 \begin{align*}
-f(Y_{ij}|b_i) &= \frac{\lambda^r}{\Gamma(r)} y_{ij}^{r-1} e^{-\lambda y_{ij}} \\[5pt]
-&= \exp\left((r-1)\log y_{ij} - \lambda y_{ij} + r\log\lambda - \log\Gamma(r)\right) \\[5pt]
-&= \exp\left(\frac{\frac{\lambda}{r}y_{ij} - \log\frac{\lambda}{r}}{-\frac{1}{r}} - \frac{\log r}{-\frac{1}{r}} + (r-1)\log y_{ij} - \log\Gamma(r)\right) \\[5pt]
-&= \exp\left(\frac{y_{ij}\theta_{ij}(b_i) - \psi(\theta_{ij}(b_i))}{a(\phi)} + c(y_{ij},\phi)\right)
+f(Y_{ij} - m + \delta | b_i) = f(Y_{ij}^\star|b_i) &= \frac{\lambda^r}{\Gamma(r)} (y_{ij}^\star)^{r-1} e^{-\lambda y_{ij}^\star} \\[5pt]
+&= \exp\left((r-1)\log y_{ij}^\star - \lambda y_{ij}^\star + r\log\lambda - \log\Gamma(r)\right) \\[5pt]
+&= \exp\left(\frac{\frac{\lambda}{r}y_{ij}^\star - \log\frac{\lambda}{r}}{-\frac{1}{r}} - \frac{\log r}{-\frac{1}{r}} + (r-1)\log y_{ij}^\star - \log\Gamma(r)\right) \\[5pt]
+&= \exp\left(\frac{y_{ij}^\star\theta_{ij}(b_i) - \psi(\theta_{ij}(b_i))}{a(\phi)} + c(y_{ij}^\star,\phi)\right)
 \end{align*}
 
-where $\theta_{ij}(b_i) = \frac{\lambda}{r}$, $\psi(\theta_{ij}(b_i)) = \log\theta_{ij}(b_i)$, $\phi = \frac{1}{r}$, and $c(y_{ij},\phi) = \frac{1-\phi}{\phi}\log y_{ij} - \log\Gamma(\frac{1}{\phi}) - \frac{1}{\phi}\log\phi$.
+where $\theta_{ij}(b_i) = \frac{\lambda}{r}$, $\psi(\theta_{ij}(b_i)) = \log\theta_{ij}(b_i)$, $\phi = \frac{1}{r}$, $a(\phi) = -\phi$, and $c(y_{ij}^\star,\phi) = \frac{1-\phi}{\phi}\log y_{ij}^\star - \log\Gamma(\frac{1}{\phi}) - \frac{1}{\phi}\log\phi$.
 
-Note that, by the model's construction, all responses from the same subject $i$ share the same random effect $b_i$. Said random effect captures the correlations between all responses from subject $i$. Therefore, given all of the random effects $b_i$, the responses are assumed to be independent, since all of the covariances are accounted for.
+Note that, by the model's construction, all responses from the same subject $i$ share the same random effect $b_i$. Said random effect captures the correlations between all responses from subject $i$. Therefore, given all random effects $b_i$, the responses are assumed to be independent, since all covariances are accounted for.
+
 
 # Model Fitting and Random Effects (25 points)
 
 1. Fitting the model (10 points): Fit your GLMM using an appropriate estimation method. Report the fixed effect estimates with standard errors and the estimated variance components.
 
-Below we fit the generalized linear mixed effects model specified in the previous section.
+Below we fit the generalized linear mixed effects model specified in the previous section. We set $\delta = 0.001$ subtract $m - \delta = 83.5 - 0.001 = 83.499$ from all SBP values before fitting (the $\delta$ adjustment ensures that all response values are strictly positive). We report the fixed effects with their standard errors, the estimated variance-covariance matrix of the random effects, and the estimate of the dispersion parameter.
 
-```{r, echo = FALSE}
-glmm_fit <- mixed_model(fixed = SYSBP ~ SEX + YEAR,
+```{r, echo = FALSE, warning = FALSE, cache = TRUE}
+shift = min(framingham_long$SYSBP) - 0.001
+framingham_long$SYSBP_SHIFTED = framingham_long$SYSBP - shift
+
+glmm_fit <- mixed_model(fixed = SYSBP_SHIFTED ~ SEX + YEAR,
                         random = ~ 1 + YEAR | RANDID,
                         data = framingham_long,
-                        family = Gamma(link = "log"))
-summary(glmm_fit)
+                        family = Gamma(link = "log"),
+                        control = list(nAGQ = 15))
 ```
 
+```{r, echo = FALSE}
+cat("Table of Fixed Effects:")
+summary(glmm_fit)$coef_table
+
+cat("Estimated Covariances of Random Effects:")
+summary(glmm_fit)$D
+
+cat("Estimated Dispersion Parameter:")
+summary(glmm_fit)$phis_table
+```
 
 2. Random effects structure (15 points): Justify your choice of random effects structure (e.g., random intercepts only, or random intercepts and slopes). If you considered alternative random effects structures, describe how you made your selection.
+
+To test whether or not the random slope effect for time is needed, we fit a model with only a random intercept and use its log likelihood, along with the log likelihood of our original model, to perform a likelihood ratio test statistic.
+
+We are testing whether or not the variance of the random effect for time is zero, which is on the boundary of the parameter space. To correct for this, we will compare our test statistic to a mixture distribution. Since the new model has one random effect and the original model has two random effects, we will compare the test statistic to $\frac{1}{2}\chi^2_1 + \frac{1}{2}\chi^2_2$.
+
+\newpage
+
+```{r, echo = FALSE, warning = FALSE, cache = TRUE}
+glmm_rand_int = mixed_model(fixed = SYSBP_SHIFTED ~ SEX + YEAR,
+                            random = ~ 1 | RANDID,
+                            data = framingham_long,
+                            family = Gamma(link = "log"),
+                            control = list(nAGQ = 15))
+```
+
+```{r, echo = FALSE}
+# Construct LRT test statistics
+logLik.rand.int = 2 * glmm_rand_int$logLik
+logLik.rand.slope = 2 * glmm_fit$logLik
+
+LRT.stat = - (logLik.rand.int - logLik.rand.slope)
+
+cat("Likelihood Ratio Test:")
+data.frame("chi^2" = LRT.stat,
+           "p" = 1 - 0.5 * (pchisq(LRT.stat, 1) + pchisq(LRT.stat, 2)))
+```
+
+The LRT test stat is $2392.265$ and yields a $p$-value less than 0.05, so we reject the null hypothesis and conclude that the variance of the random slope effect for time is not zero. Therefore, the random effect for time should remain in the model.
 
 
 # Interpretation (25 points)
 
 1. Subject-specific interpretation (15 points): Interpret your key fixed effect estimates. Be specific that these are subject-specific (conditional) interpretations. For example, for a binary outcome with logit link, interpret in terms of odds ratios for a given individual, holding the random effect constant.
 
+The estimated intercept for the fixed effect is 2.7527. If we hold all random effects constant, then the average SBP for a given male individual at baseline is $g^{-1}(2.7527) + m - \delta = \exp(2.7527) + 83.499 \approx 99.184$ mmHg.
+
+The estimated fixed effect of sex is 0.0498. If we hold time constant, and if we hold all random intercepts constant, then on average, the shifted SBP for a given female individual is $\exp(0.0498) \approx 1.051$ times the shifted SBP for a given male individual.
+
+The estimated fixed effect of the number of years since baseline is 0.0190. If we hold sex constant, and if we hold all random intercepts constant, then on average, the shifted SBP for a given individual increases by a multiplicative factor of $\exp(0.0190) \approx 1.019$ for each year that has elapsed since baseline.
+
 2. Comparison to GEE (10 points): Compare your GLMM parameter estimates to the GEE estimates from Assignment 6. Are the estimates similar or different? Explain why the parameters from these two approaches have different interpretations.
+
+\textcolor{red}{[[TO DO]]}
+
+\newpage
 
 
 # Random Effects Predictions (15 points)
 
 1. Predicted random effects (10 points): Obtain the predicted random effects for each subject. Create a figure displaying these predictions (e.g., a histogram or caterpillar plot).
 
+```{r, include = FALSE}
+pred_ranef = ranef(glmm_fit)
+```
+
+```{r, echo = FALSE, message = FALSE, fig.height = 4}
+pred_ranef %>% ggplot(aes(x = `(Intercept)`)) + 
+  geom_histogram(fill = "red3", bins = 30) +
+  labs(title = "GLMM: Predicted Random Intercepts",
+       x = "Predicted Random Intercept", y = "Count") +
+  theme_minimal() + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r, echo = FALSE, message = FALSE, fig.height = 4}
+pred_ranef %>% ggplot(aes(x = YEAR)) + 
+  geom_histogram(fill = "blue3", bins = 30) +
+  labs(title = "GLMM: Predicted Random Slopes for Time",
+       x = "Predicted Random Slope", y = "Count") +
+  theme_minimal() + theme(plot.title = element_text(hjust = 0.5))
+```
+
+
 2. Subject-specific probabilities or rates (5 points): For a few selected subjects, compute and display the predicted subject-specific response probabilities (for binary outcomes) or rates (for count outcomes) over time.
+
+```{r, include = FALSE}
+ss_preds = fitted(glmm_fit, type = "subject_specific") + shift
+predictions.df = data.frame(Year = framingham_long$YEAR %>% as.factor(),
+                            ss_pred = ss_preds)
+```
+
+```{r, echo = FALSE}
+set.seed(12)
+subj_ids = sample(1:3206, 4, replace = FALSE)
+ss_preds_idx = c()
+for (i in 1:4) { ss_preds_idx = c(ss_preds_idx, (3*subj_ids[i] - 2):(3*subj_ids[i])) }
+
+ssmt = data.frame(ID = framingham_long$RANDID[ss_preds_idx],
+                  Year = framingham_long$YEAR[ss_preds_idx],
+                  SBP_True = framingham_long$SYSBP[ss_preds_idx],
+                  SBP_Pred = ss_preds[ss_preds_idx])
+
+ssmt %>% ggplot(aes(x = Year, group = ID)) + facet_wrap(~ID, nrow = 2) +
+  geom_line(aes(y = SBP_True, color = "Observed"), linewidth = 0.75) + 
+  geom_point(aes(y = SBP_True, color = "Observed")) +
+  geom_line(aes(y = SBP_Pred, color = "Fitted"), linetype = "dashed", linewidth = 0.75) +
+  geom_point(aes(y = SBP_Pred, color = "Fitted")) +
+  ggtitle("Subject-Specific Mean Trajectories vs. Observed Data") + 
+  ylab("Systolic Blood Pressure (mmHg)") +
+  scale_x_continuous(breaks = seq(0,12,3)) + labs(color = "Trajectory") + 
+  scale_color_manual(values = c("Observed" = "darkgreen", "Fitted" = "blue3")) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
 
 
 # Summary (10 points)
@@ -101,3 +202,8 @@ Summarize your findings as you would for a collaborator. Address:
 * What are the key findings regarding your research question?
 * When would you prefer GLMM over GEE (or vice versa) for your data?
 
+We fit a gamma GLMM with a log link function to model systolic blood pressure as a function of sex and time. The model includes fixed effects for sex and the number of years since baseline as well as random intercepts and random slopes for the number of years since baseline. SBP values were shifted down by 83.499 mmHg before fitting.
+
+We found that on average, after controlling for random effects, an individual's average shifted SBP increases by approximately 1.9% for each year since baseline if sex is held constant, and individual shifted SBP is approximately 5.1% higher for females than males if time is held constant.The fixed effect for time since baseline was found to be statistically significant at the $\alpha = 0.05$ level while the fixed effect for sex was not found to be statistically significant.
+
+\textcolor{red}{[[TO DO: GEE COMPARISON]]}
