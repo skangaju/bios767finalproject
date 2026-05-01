@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.3)  30 APR 2026 21:31
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.3)  30 APR 2026 21:39
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -536,7 +536,7 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <7> on input line 105.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <5> on input line 105.
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 133.
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 134.
 (/Users/abbeyskinner/Library/TinyTeX/texmf-dist/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
@@ -560,7 +560,7 @@ Here is how much of TeX's memory you used:
  14 hyphenation exceptions out of 8191
  89i,10n,93p,651b,541s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </Users/abbeyskinner/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></Users/abbeyskinner/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></Users/abbeyskinner/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi5.pfb></Users/abbeyskinner/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi7.pfb></Users/abbeyskinner/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr10.pfb></Users/abbeyskinner/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr12.pfb></Users/abbeyskinner/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr17.pfb></Users/abbeyskinner/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr7.pfb></Users/abbeyskinner/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb>
-Output written on hw6.pdf (3 pages, 165604 bytes).
+Output written on hw6.pdf (3 pages, 165658 bytes).
 PDF statistics:
  117 PDF objects out of 1000 (max. 8388607)
  91 compressed objects within 1 object stream
