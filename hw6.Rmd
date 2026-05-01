@@ -35,15 +35,15 @@ framingham_long$SEX = (framingham_long$SEX == 2) %>% as.numeric()
 
 1. Outcome and link function (10 points): Identify the binary, count, or discrete outcome you are analyzing. Specify an appropriate link function and variance function for your outcome. Justify your choices.
 
-Our outcome is systolic blood pressure, which is a continuous response, so we will use the identity link specified as $g(\mu_{ij})=\mu_{ij}=X_{ij}\beta$, where $E(Y_{ij})=\mu_{ij}$, and the marginal variance will be specified as $Var(Y_{ij})=\phi$.
+Our outcome is systolic blood pressure, which is a continuous response. We model the marginal mean using a log link specified as ($g(\mu_{ij}) = \log \mu_{ij}=X_{ij}\beta$) where $E(Y_{ij})=\mu_{ij} = e^{X_{ij}\beta}$. We assume a Gaussian variance structure, $Var(Y_{ij})=\phi$. While SBP is continuous and often modeled with an identity link, the log link provides a multiplicative interpretation and ensures positive fitted values.
 
 2. Mean model (15 points): Write out your marginal mean model. Identify the covariates you are including and describe what each parameter represents. Remember that parameters in marginal models have population-averaged interpretations.
 
-Let $Y_{ij}$ be the systolic blood pressure for subject $i$ at the $j$th visit. Note that marginal models handle time continuously, where it enters as a covariate in $X_{ij}$. Additionally, since marginal models do not include a random effect, we will only have the population mean trajectory (no subject specific mean trajectory). We can write the marginal mean model as: $$E(Y_{ij})=g^{-1}(X_{ij}\beta)=\mu_{ij}=\beta_0+\beta_1x_{i,YEAR}+\beta_2x_{i,SEX}$$
+Let $Y_{ij}$ be the systolic blood pressure for subject $i$ at the $j$th visit. Note that marginal models handle time continuously, where it enters as a covariate in $X_{ij}$. Additionally, since marginal models do not include a random effect, we will only have the population mean trajectory (no subject specific mean trajectory). We can write the marginal mean model as: $$E(Y_{ij})=\mu_{ij}=\exp(\beta_0+\beta_1x_{i,YEAR}+\beta_2x_{i,SEX})$$
 
-* $\beta_0$ denotes the baseline mean SBP for males
-* $\beta_1$ denotes the change in mean SBP per year 
-* $\beta_2$ denotes the difference in mean SBP between females and males at any fixed point in time
+* $\beta_0$ denotes the baseline log mean SBP for males
+* $\beta_1$ denotes the log multiplicative change in mean SBP per year 
+* $\beta_2$ denotes the log ratio in mean SBP between females and males at any fixed point in time
 * $x_{i,YEAR}$ denotes the number of years since baseline for the $i$th subject
 * $x_{i,SEX}$ is a binary indicator for the sex of the $i$th subject
 
@@ -59,7 +59,7 @@ gee_exch <- geeglm(
   SYSBP ~ YEAR + SEX,
   id = RANDID,
   data = framingham_long,
-  family = gaussian(link = "identity"),
+  family = gaussian(link = "log"),
   corstr = "exchangeable"
 )
 
@@ -67,7 +67,7 @@ gee_ar1 <- geeglm(
   SYSBP ~ YEAR + SEX,
   id = RANDID,
   data = framingham_long,
-  family = gaussian(link = "identity"),
+  family = gaussian(link = "log"),
   corstr = "ar1"
 )
 
@@ -75,7 +75,7 @@ gee_un <- geeglm(
   SYSBP ~ YEAR + SEX,
   id = RANDID,
   data = framingham_long,
-  family = gaussian(link = "identity"),
+  family = gaussian(link = "log"),
   corstr = "unstructured"
 )
 
@@ -231,24 +231,22 @@ se_compare_table_pdf %>%
 
 2. Interpretation (10 points): Discuss what the differences (or similarities) between these standard errors suggest. Given your sample size and the robustness properties of GEE, which variance estimator do you consider more appropriate for your analysis, and why?
 
-The model-based standard errors are similar to the robust standard errors. The biggest deviance comes from the intercept where the model based standard error is greater than the robust standard error by approximately $0.09$. Both year and sex yield model based standard errors that are very close to the robust standard errors. The similarity between these errors suggests that the selected working covariance structure is a reasonable specification. Despite this, we will still use the robust standard errors to be safer as the model based standard errors rely on the covariance structure being correctly specified. 
-
-
+The model-based standard errors are similar to the robust standard errors for all three estimates The similarity between these errors suggests that the selected working covariance structure is a reasonable specification. Despite this, we will still use the robust standard errors to be safer as the model based standard errors rely on the covariance structure being correctly specified. 
 
 # Hypothesis Testing and Interpretation (20 points)
 1. Hypothesis test (10 points): State and test a hypothesis relevant to your research question. Report the test statistic, degrees of freedom, p-value, and interpret the result.
 
-We will test to see if there is a sex effect. Our hypotheses are $H_0: \beta_2=0$ vs $H_1: \beta_2 \neq 0$. We will look at the compound symmetry, sex row of Table 1 to find the relevant statistics to report for this test. This test has 1 degree of freedom and yields a test statistic of $7.59$ and a p-value of $0.0059$. Since the p-value is $< 0.05$, we will reject $H_0$. We claim that there is a significant difference in the mean SBP between males and females after adjusting for the number of years since baseline.
+We will test to see if there is a sex effect. Our hypotheses are $H_0: \beta_2=0$ vs $H_1: \beta_2 \neq 0$. We will look at the compound symmetry, sex row of Table 1 to find the relevant statistics to report for this test. This test has 1 degree of freedom and yields a test statistic of $7.09$ and a p-value of $0.0077$. Since the p-value is $< 0.05$, we will reject $H_0$. We claim that there is a significant multiplicative difference in mean SBP between males and females after adjusting for the number of years since baseline.
 
 2. Interpretation of effects (10 points): Interpret your key parameter estimates in the context of your research question. Be specific about the population-averaged interpretation (e.g., for a binary outcome with logit link, interpret in terms of odds ratios at the population level).
 
 The compound symmetry section of Table 1 presents the parameter estimates discussed below:
 
-* $\beta_0 = 129.263$ represents the population-averaged mean SBP at baseline for males.
-* $\beta_1 = 0.838$ indicates that, on average, SBP increases by about 0.838 mmHG per year at the population level.
-* $\beta_2 = 1.807$ indicates that on average, females have an SBP that is 1.807 mmHG greater than males, after adjusting for the numebr of years since baseline.
+* $\beta_0 = 4.863$ represents the population-averaged log mean SBP at baseline for males. Equivalently we can state that mean SBP at baseline for males is $exp(4.863)=129.41$.
+* $\beta_1 = 0.006$ indicates that, on average, SBP increases by a factor of $exp(0.006) = 1.006$ per year at the population level.
+* $\beta_2 = 0.013$ indicates that on average, females have a mean SBP that is $exp(0.013) = 1.013$ times that of males, after adjusting for the numebr of years since baseline.
 
-Recall that we have a continuous outcome and used the identity link function in our model.
+Recall that we have a continuous outcome and used the log link function in our model.
 
 # Summary (10 points)
 Summarize your findings as you would for a collaborator. Address:
@@ -257,12 +255,10 @@ Summarize your findings as you would for a collaborator. Address:
 - What are the key findings regarding your research question?
 - What are the limitations of the marginal model approach for your data?
 
-We fit a marginal model for systolic blood pressure using generalized estimating equations with a normal distribution and an identity link, including time and sex as covariates. We specified an exchangeable (compound symmetry) working correlation structure to account for within-subject correlation across repeated measurements. 
+We fit a marginal model for systolic blood pressure using generalized estimating equations with a normal distribution and a log link, including time and sex as covariates. We specified an exchangeable (compound symmetry) working correlation structure to account for within-subject correlation across repeated measurements. 
 
-We found that both time and sex are significantly associated with systolic blood pressure at the population level. Specifically, at the population level, we found that SBP increases over time and that females have higher SBP than males on average at any given time point.
+We found that both time and sex are significantly associated with systolic blood pressure at the population level. Specifically, at the population level, we found that SBP increases multiplicatively over time and that females have higher SBP than males on average at any given time point.
 
 One limitation of the marginal model is that we are not able to calculate subject specific mean trajectories, since a random effect is not included in our model. Because of this, we are not able to capture individual level variability in baseline SBP or its change over time. Lastly, the model based standard errors require that the working covariance structure is correctly specified; however, the robust standard errors provide an alternative for when the covariance structure may be misspecified.
-
-
 
 
