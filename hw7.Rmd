@@ -12,6 +12,7 @@ library(dplyr)
 library(tidyr)
 library(gt)
 library(kableExtra)
+library(geepack)
 library(GLMMadaptive)
 ```
 
@@ -132,7 +133,9 @@ The estimated fixed effect of the number of years since baseline is 0.0190. If w
 
 2. Comparison to GEE (10 points): Compare your GLMM parameter estimates to the GEE estimates from Assignment 6. Are the estimates similar or different? Explain why the parameters from these two approaches have different interpretations.
 
-\textcolor{red}{[[TO DO]]}
+The GLMM fixed effect parameter estimates differ from the the GEE parameter estimates in that the GLMM predicts a lower mean baseline SBP for males than the GEE model and its estimates for the sex effect and the time effect are higher than those of the GEE model.
+
+The parameters from these two approaches have different interpretations because the random effects in the GLMM capture individual-level deviations from population-level trends, so the model's fixed effects represent the population-level trends after adjusting for the individual-level variation in the response. The GEE model, however, does not include any random effects, so the parameter estimates represent population-level trends without any adjustment for individual-level variation.
 
 \newpage
 
@@ -160,7 +163,6 @@ pred_ranef %>% ggplot(aes(x = YEAR)) +
        x = "Predicted Random Slope", y = "Count") +
   theme_minimal() + theme(plot.title = element_text(hjust = 0.5))
 ```
-
 
 2. Subject-specific probabilities or rates (5 points): For a few selected subjects, compute and display the predicted subject-specific response probabilities (for binary outcomes) or rates (for count outcomes) over time.
 
@@ -206,4 +208,77 @@ We fit a gamma GLMM with a log link function to model systolic blood pressure as
 
 We found that on average, after controlling for random effects, an individual's average shifted SBP increases by approximately 1.9% for each year since baseline if sex is held constant, and individual shifted SBP is approximately 5.1% higher for females than males if time is held constant.The fixed effect for time since baseline was found to be statistically significant at the $\alpha = 0.05$ level while the fixed effect for sex was not found to be statistically significant.
 
-\textcolor{red}{[[TO DO: GEE COMPARISON]]}
+We cannot compare the fits of the GLMM and the GEE model using likelihood-based metrics or quasi-likelihood-based metrics, since the former is likelihood-based and the latter is quasi-likelihood-based. However, it is worth noting that even after transforming the data to optimize the fit of the GLMM, the population mean trajectories for the GLMM model are much less consistent with the empirical population mean trajectories than those of the GEE model (see figure below). That being said, the subject-specific mean trajectories for the GLMM are very similar to the subject-specific mean trajectories for the LMM from HW5, which suggests that the random effect estimates are fairly robust to model misspecification.
+
+For these reasons, the GEE model is preferred over the GLMM when population-level inference is of primary interest, and the GLMM is preferred over the GEE model when subject-level inference is of primary interest.
+
+\vspace{10pt}
+
+```{r, include = FALSE}
+# Fit the GEE from HW6
+gee_exch <- geeglm(
+  SYSBP ~ YEAR + SEX,
+  id = RANDID,
+  data = framingham_long,
+  family = Gamma(link = "log"),
+  corstr = "exchangeable"
+)
+
+# Make a table with the sample means
+tab_dat <- framingham %>%
+  mutate(SEX = recode(as.character(SEX), `1` = "Male", `2` = "Female"),
+         YEAR = recode(PERIOD, `1` = 0, `2` = 6, `3` = 12)) %>%
+  group_by(YEAR, SEX) %>%
+  summarise(
+    mean_sbp = mean(SYSBP, na.rm = TRUE),
+    sd_sbp   = sd(SYSBP,   na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from  = SEX,
+    values_from = c(mean_sbp, sd_sbp),
+    names_glue  = "{SEX}_{.value}"
+  )
+
+# Make a df with the fitted means
+fit_means <- data.frame(
+  time = c(0, 6, 12, 0, 6, 12),
+  gee_mean = fitted(gee_exch) %>% unique(),
+  glmm_mean = (fitted(glmm_fit) + shift) %>% unique(),
+  sex = c("Female","Female","Female","Male","Male","Male")
+)
+```
+
+
+```{r, echo = FALSE}
+tab_dat %>% ggplot(aes(x = YEAR)) + 
+  geom_line(aes(y = Male_mean_sbp, color = "Male", linetype = "Empirical"),
+            linewidth = 0.75) +
+  geom_point(aes(y = Male_mean_sbp), color = "green3", size = 2.5) +
+  geom_line(aes(y = Female_mean_sbp, color = "Female", linetype = "Empirical"),
+            linewidth = 0.75) +
+  geom_point(aes(y = Female_mean_sbp), color = "blue3", size = 2.5) +
+  ggtitle("Mean Systolic Blood Pressure Over Time, By Sex") +
+  xlab("Year") + ylab("Mean Systolic Blood Pressure (mmHg)") +
+  scale_x_continuous(breaks = 0:12) + labs(color = "Sex", linetype = "Trajectory") + 
+  scale_color_manual(values = c("Male" = "green3", "Female" = "blue3")) +
+  theme_minimal() + theme(plot.title = element_text(hjust = 0.5))+
+  # Add the fitted lines from the GEE 
+  geom_line(data = fit_means,
+            aes(x = time, y = gee_mean, color = sex, linetype = "GEE"),
+            linewidth = 1) +
+  geom_point(data = fit_means,
+             aes(x = time, y = gee_mean, color = sex),
+             shape = 1,
+             size = 3) +
+  # Add the fitted lines from the GLMM 
+  geom_line(data = fit_means,
+            aes(x = time, y = glmm_mean, color = sex, linetype = "GLMM"),
+            linewidth = 1) +
+  geom_point(data = fit_means,
+             aes(x = time, y = glmm_mean, color = sex),
+             shape = 1,
+             size = 3) +
+  scale_linetype_manual(values = c("Empirical" = "solid", 
+                                   "GEE" = "dashed", "GLMM" = "dotted"))
+```
