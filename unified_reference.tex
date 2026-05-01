@@ -122,7 +122,7 @@
 \begin{center}
 {\LARGE \textbf{BIOS 767: Longitudinal Data Analysis}}\\[0.5em]
 {\Large A Unified Reference for Longitudinal Data Analysis Methods}\\[0.5em]
-{\normalsize Spring 2022 - Edited by: Sonja Kangaju and Abbey Skinner}
+{\normalsize Spring 2026 - Edited by: Sonja Kangaju and Abbey Skinner}
 \end{center}
 
 \vspace{1em}
@@ -152,6 +152,8 @@ This document presents six methods for analyzing longitudinal data through a com
 \end{enumerate}
 
 By running every method through the same eleven questions, similarities and differences become visible at a glance. A summary of missing data assumptions appears at the end of the document.
+
+\newpage
 
 %=============================================================================
 \section*{2. Notation and Key Concepts}
@@ -256,20 +258,18 @@ where $Q(\hat{\bbeta}; \mathbf{I})$ is the quasi-likelihood evaluated at $\hat{\
 \section*{4. The Six Models}
 %=============================================================================
 
-\newpage
-
 %-----------------------------------------------------------------------------
 \begin{tcolorbox}[modelbox, title={Model 1: Repeated Measures ANOVA}]
 \end{tcolorbox}
 %-----------------------------------------------------------------------------
 
-\subsection*{4.1 Model Form}
+\subsection*{4.1.1 Model Form}
 
 $$\bY_i = \bX_i \bbeta + \mathbf{J}_{n} b_i + \bepsilon_i$$
 
 where $b_i \sim \Normal(0, \sigma_b^2)$ independently across subjects and independently of $\bepsilon_i \sim \Normal(\mathbf{0}, \sigma_e^2 \mathbf{I})$. The scalar $b_i$ is a subject-specific random intercept shared equally across all time points. The vector $\mathbf{J}_n$ is an $n \times 1$ vector of ones.
 
-\subsection*{4.2 Model Assumptions}
+\subsection*{4.1.2 Model Assumptions}
 
 \begin{itemize}[leftmargin=2em]
   \item $\bY_i$ follows a normal distribution conditional on $b_i$.
@@ -279,7 +279,7 @@ where $b_i \sim \Normal(0, \sigma_b^2)$ independently across subjects and indepe
   \item Balanced, complete data are required: all subjects must be observed at the same set of occasions.
 \end{itemize}
 
-\subsection*{4.3 Covariance Structure}
+\subsection*{4.1.3 Covariance Structure}
 
 \begin{align*}
 \Var(\bY_i) &= \Var(\bX_i\bbeta + \mathbf{J}_n b_i + \bepsilon_i) \\
@@ -288,39 +288,39 @@ where $b_i \sim \Normal(0, \sigma_b^2)$ independently across subjects and indepe
 
 The resulting covariance matrix has the compound symmetry form: variance $\sigma_b^2 + \sigma_e^2$ on the diagonal and covariance $\sigma_b^2$ on every off-diagonal entry. The correlation between any two occasions is $\rho = \sigma_b^2 / (\sigma_b^2 + \sigma_e^2)$, regardless of how far apart in time the occasions are. The compound symmetry structure is not chosen or tested --- it is imposed by the model form.
 
-\subsection*{4.4 How Time is Handled}
+\subsection*{4.1.4 How Time is Handled}
 
 Time is \textbf{discrete and categorical}. Each occasion is treated as a fixed factor level. All subjects must be observed at exactly the same set of occasions, and the design must be completely balanced. Continuous time trends cannot be modeled.
 
-\subsection*{4.5 Population-Mean Trajectory}
+\subsection*{4.1.5 Population-Mean Trajectory}
 
 $$\E(\bY_i) = \bX_i \bbeta$$
 
 The population mean trajectory is captured through the fixed effects $\bbeta$, which represent group-by-time cell means. No parametric form is imposed on how the mean changes over time.
 
-\subsection*{4.6 Subject-Specific Trajectory}
+\subsection*{4.1.6 Subject-Specific Trajectory}
 
 $$\E(\bY_i \mid b_i) = \bX_i \bbeta + \mathbf{J}_n b_i$$
 
 The subject-specific trajectory shifts the population mean up or down by a constant $b_i$ across all occasions. All subjects are assumed to change over time in exactly the same way, differing only in their baseline level. There is no subject-specific slope.
 
-\subsection*{4.7 Estimation}
+\subsection*{4.1.7 Estimation}
 
 Ordinary least squares (OLS). Because the data are balanced, complete, and normally distributed, OLS and maximum likelihood coincide and yield closed-form solutions. No iterative algorithm is required.
 
-\subsection*{4.8 Hypothesis Testing}
+\subsection*{4.1.8 Hypothesis Testing}
 
 F-tests for the main effect of time, the main effect of group, and the group-by-time interaction. F-tests are valid under sphericity --- the weaker condition implied by but not equivalent to compound symmetry. Mauchly's test is used to assess sphericity. When sphericity is violated, degree-of-freedom corrections (Greenhouse-Geisser or Huynh-Feldt) are applied to adjust the F-test rather than changing the model.
 
-\subsection*{4.9 Model Selection}
+\subsection*{4.1.9 Model Selection}
 
 The covariance structure is fixed as compound symmetry by the model form and is not selected or tested against alternatives. For the mean structure, the group-by-time interaction is the primary term of interest. Simpler mean models (for example, no interaction or no group effect) can be tested via F-tests.
 
-\subsection*{4.10 Missing Data}
+\subsection*{4.1.10 Missing Data}
 
 Complete data are required. Any subject with a missing observation at any occasion is typically excluded entirely. Missing data handling is the most restrictive of all six models considered here.
 
-\subsection*{4.11 Diagnostics}
+\subsection*{4.1.11 Diagnostics}
 
 Residuals are $r_{ij} = Y_{ij} - \mathbf{X}_{ij}'\hat{\bbeta}$. Because the error term $\bepsilon_i \sim \Normal(\mathbf{0}, \sigma_e^2\mathbf{I})$ and the random effect $b_i$ is scalar, residuals are uncorrelated within subject conditional on $b_i$. No Cholesky transformation is needed.
 
@@ -330,7 +330,7 @@ Residuals are $r_{ij} = Y_{ij} - \mathbf{X}_{ij}'\hat{\bbeta}$. Because the erro
   \item \textbf{Outlier and influence detection:} Cook's distance and DFFITS in classic scalar form, with deletion at the \textbf{observation} level.
 \end{itemize}
 
-\subsection*{4.12 R Code}
+\subsection*{4.1.12 R Code}
 
 Data needs to be in wide format. R gives a Type I sum of squares.
 
@@ -339,7 +339,7 @@ aov <- aov(outcome ~ covariates + Error(factor(id)))
 summary(aov)
 \end{lstlisting}
 
-\subsection*{4.13 SAS Code}
+\subsection*{4.1.13 SAS Code}
 
 Data needs to be in long format. SAS gives a Type III sums of squares.
 
@@ -391,13 +391,13 @@ run;
 \end{tcolorbox}
 %-----------------------------------------------------------------------------
 
-\subsection*{4.1 Model Form}
+\subsection*{4.2.1 Model Form}
 
 $$\bY_i = \bX_i \bbeta + \bepsilon_i$$
 
 where $\bepsilon_i \sim \Normal(\mathbf{0}, \bSigma)$ and $\bSigma$ is an unstructured covariance matrix. Subjects are independent of one another; observations within subject are correlated through $\bSigma$.
 
-\subsection*{4.2 Model Assumptions}
+\subsection*{4.2.2 Model Assumptions}
 
 \begin{itemize}[leftmargin=2em]
   \item $\bY_i$ follows a multivariate normal distribution.
@@ -408,13 +408,13 @@ where $\bepsilon_i \sim \Normal(\mathbf{0}, \bSigma)$ and $\bSigma$ is an unstru
   \item Balanced, complete data are required: all subjects must be observed at the same set of occasions.
 \end{itemize}
 
-\subsection*{4.3 Covariance Structure}
+\subsection*{4.2.3 Covariance Structure}
 
 $$\Var(\bY_i) = \bSigma$$
 
 The unstructured $\bSigma$ allows variances to differ across occasions and correlations to differ depending on how far apart the occasions are. The unstructured form is the most flexible covariance structure available and is the opposite extreme from the compound symmetry structure of ANOVA. The flexibility of the unstructured form comes at a cost: with $n$ occasions, $n(n+1)/2$ covariance parameters must be estimated, which can be large relative to the sample size and can reduce power. The covariance structure is not selected --- it is fixed as unstructured.
 
-\subsection*{4.4 How Time is Handled}
+\subsection*{4.2.4 How Time is Handled}
 
 Time is \textbf{discrete and categorical}, as in ANOVA. Each occasion is treated as a fixed factor level. All subjects must be observed at exactly the same set of occasions and the design must be completely balanced. Continuous time trends cannot be modeled.
 
@@ -424,27 +424,27 @@ $$\E(\bY_i) = \bX_i \bbeta$$
 
 The population mean trajectory is captured through the fixed effects $\bbeta$, representing group-by-time cell means. As in ANOVA, no parametric form is imposed on how the mean changes over time.
 
-\subsection*{4.6 Subject-Specific Trajectory}
+\subsection*{4.2.6 Subject-Specific Trajectory}
 
 No subject-specific trajectory is available. Because MANOVA includes no random effects, all subjects in the same covariate group follow the same mean trajectory. Between-subject heterogeneity is captured through the unstructured $\bSigma$ rather than through individual-level parameters.
 
-\subsection*{4.7 Estimation}
+\subsection*{4.2.7 Estimation}
 
 Maximum likelihood (ML). Under the multivariate normal assumption and balanced complete data, the ML estimators of $\bbeta$ and $\bSigma$ have closed forms. No iterative algorithm is required.
 
-\subsection*{4.8 Hypothesis Testing}
+\subsection*{4.2.8 Hypothesis Testing}
 
 Multivariate test statistics --- Wilks' Lambda, Pillai's Trace, Hotelling-Lawley Trace, and Roy's Largest Root --- for the main effect of time, the main effect of group, and the group-by-time interaction. Because $\bSigma$ is unstructured, no sphericity assumption is required, and the Greenhouse-Geisser and Huynh-Feldt corrections are not needed. Univariate F-tests can be used as follow-up tests.
 
-\subsection*{4.9 Model Selection}
+\subsection*{4.2.9 Model Selection}
 
 The covariance structure is fixed as unstructured and is not selected or tested. For the mean structure, the group-by-time interaction is the primary term of interest. Simpler mean models can be compared using likelihood ratio tests or multivariate F-tests.
 
-\subsection*{4.10 Missing Data}
+\subsection*{4.2.10 Missing Data}
 
 Complete data are required, as in ANOVA. Any subject with a missing observation at any occasion is excluded entirely.
 
-\subsection*{4.11 Diagnostics}
+\subsection*{4.2.11 Diagnostics}
 
 Residuals are $\mathbf{r}_i = \bY_i - \bX_i\hat{\bbeta}$. Because $\bSigma$ is unstructured, residuals are correlated within subject. A Cholesky transformation is applied to decorrelate residuals before standard plots.
 
@@ -455,7 +455,7 @@ Residuals are $\mathbf{r}_i = \bY_i - \bX_i\hat{\bbeta}$. Because $\bSigma$ is u
   \item \textbf{No sphericity test:} Because $\bSigma$ is unstructured, no sphericity assumption is imposed and Mauchly's test is not needed.
 \end{itemize}
 
-\subsection*{4.12 R Code}
+\subsection*{4.2.12 R Code}
 \textbf{Same Profile}
 \begin{lstlisting}[style=Rstyle]
 res.manova <- manova(cbind(dental.data$age8,
@@ -465,7 +465,7 @@ res.manova <- manova(cbind(dental.data$age8,
 summary(res.manova)
 \end{lstlisting}
 
-\subsection*{4.13 SAS Code}
+\subsection*{4.2.13 SAS Code}
 
 \textbf{Parallelism Test}
 \begin{lstlisting}[style=SASstyle]
@@ -515,7 +515,7 @@ run;
 \end{tcolorbox}
 %-----------------------------------------------------------------------------
 
-\subsection*{4.1 Model Form}
+\subsection*{4.3.1 Model Form}
 
 $$\bY_i = \bX_i \bbeta + \bepsilon_i$$
 
@@ -526,7 +526,7 @@ Two options for the assumptions on $\bepsilon_i$ determine the estimation approa
   \item \textbf{Option 2 (Moment assumptions only):} $\E(\bepsilon_i) = \mathbf{0}$, $\Var(\bepsilon_i) = \bSigma_i$
 \end{itemize}
 
-\subsection*{4.2 Model Assumptions}
+\subsection*{4.3.2 Model Assumptions}
 
 \begin{itemize}[leftmargin=2em]
   \item Subjects are independent of each other.
@@ -536,27 +536,27 @@ Two options for the assumptions on $\bepsilon_i$ determine the estimation approa
   \item No random subject effect is included. Between-subject heterogeneity is absorbed into $\bSigma_i$.
 \end{itemize}
 
-\subsection*{4.3 Covariance Structure}
+\subsection*{4.3.3 Covariance Structure}
 
 $$\Var(\bY_i) = \bSigma_i$$
 
 The covariance structure can be specified from a menu of candidate structures including compound symmetry, AR(1), exponential, Toeplitz, and unstructured. Under Option 1, $\bSigma_i$ is selected and tested as part of the modeling process. Under Option 2, $\bSigma_i$ is the working covariance --- selection is guided by efficiency considerations rather than formal testing, and misspecification does not invalidate inference when the sandwich estimator is used.
 
-\subsection*{4.4 How Time is Handled}
+\subsection*{4.3.4 How Time is Handled}
 
 Time is \textbf{continuous} and enters as a covariate in $\bX_i$. Flexible parametric forms --- linear, quadratic, polynomial, splines, transformations such as $\sqrt{t}$ --- can be used. The design does not need to be balanced: subjects can be observed at different time points and with different numbers of observations.
 
-\subsection*{4.5 Population-Mean Trajectory}
+\subsection*{4.3.5 Population-Mean Trajectory}
 
 $$\E(\bY_i) = \bX_i \bbeta$$
 
 The population mean trajectory is modeled directly through $\bbeta$. Because the link function is the identity, $\bbeta$ has a population-averaged interpretation under both options. No subject-specific random effects are present, so the population-mean trajectory is the only trajectory in the model.
 
-\subsection*{4.6 Subject-Specific Trajectory}
+\subsection*{4.3.6 Subject-Specific Trajectory}
 
 No subject-specific trajectory is available. Because the GLM includes no random effects, all subjects in the same covariate group follow the same mean trajectory. Between-subject heterogeneity is captured entirely through $\bSigma_i$.
 
-\subsection*{4.7 Estimation}
+\subsection*{4.3.7 Estimation}
 
 \textbf{Option 1 --- ML/REML:} $\bbeta$ and $\bSigma_i$ are estimated jointly via the likelihood. The ML estimator of $\bbeta$ is:
 $$\hat{\bbeta}_{ML} = \left(\sum_{i=1}^N \bX_i'\hat{\bSigma}_i^{-1}\bX_i\right)^{-1}\sum_{i=1}^N \bX_i'\hat{\bSigma}_i^{-1}\bY_i$$
@@ -566,7 +566,7 @@ ML is used for mean model comparisons; REML corrects for downward bias in varian
 $$\mathbf{A} = \sum_{i=1}^N \bX_i'\hat{\bSigma}_i^{-1}\bX_i \qquad \mathbf{B} = \sum_{i=1}^N \bX_i'\hat{\bSigma}_i^{-1}\hat{\bepsilon}_i\hat{\bepsilon}_i'\hat{\bSigma}_i^{-1}\bX_i$$
 and $\hat{\bepsilon}_i = \bY_i - \bX_i\hat{\bbeta}$ are the marginal residuals. The matrix $\mathbf{A}$ is the model-based precision; the matrix $\mathbf{B}$ uses the observed residuals rather than the assumed covariance model, which makes the sandwich estimator valid even when $\bSigma_i$ is misspecified.
 
-\subsection*{4.8 Hypothesis Testing}
+\subsection*{4.3.8 Hypothesis Testing}
 
 \textbf{Option 1 --- ML/REML:}
 \begin{itemize}[leftmargin=2em]
@@ -582,7 +582,7 @@ and $\hat{\bepsilon}_i = \bY_i - \bX_i\hat{\bbeta}$ are the marginal residuals. 
   \item LRT is not valid because no full likelihood is specified.
 \end{itemize}
 
-\subsection*{4.9 Model Selection}
+\subsection*{4.3.9 Model Selection}
 
 \textbf{Option 1:}
 \begin{itemize}[leftmargin=2em]
@@ -597,7 +597,7 @@ and $\hat{\bepsilon}_i = \bY_i - \bX_i\hat{\bbeta}$ are the marginal residuals. 
   \item Covariance structure: examine empirical residual correlation patterns; compare efficiency across candidate structures using sandwich standard errors. A working covariance close to the truth gives tighter confidence intervals; a poor working covariance (even independence) gives valid but wider intervals when the sandwich estimator is used.
 \end{itemize}
 
-\subsection*{4.10 Missing Data}
+\subsection*{4.3.10 Missing Data}
 
 \begin{itemize}[leftmargin=2em]
   \item \textbf{Option 1 --- ML/REML:} Valid under MAR. The full likelihood uses all observed data from partially observed subjects without requiring complete records.
@@ -605,7 +605,7 @@ and $\hat{\bepsilon}_i = \bY_i - \bX_i\hat{\bbeta}$ are the marginal residuals. 
   \item Neither option handles MNAR without additional assumptions and explicit modeling of the missingness process.
 \end{itemize}
 
-\subsection*{4.11 Diagnostics}
+\subsection*{4.3.11 Diagnostics}
 
 The marginal residual $\mathbf{r}_i = \bY_i - \bX_i\hat{\bbeta}$ assesses the mean structure. Because $\bSigma_i$ induces within-subject correlation, a Cholesky transformation is applied before standard residual plots.
 
@@ -618,7 +618,7 @@ The marginal residual $\mathbf{r}_i = \bY_i - \bX_i\hat{\bbeta}$ assesses the me
 \end{itemize}
 
 
-\subsection*{4.12 R Code}
+\subsection*{4.3.12 R Code}
 
 \textbf{Compute SEs}
 \begin{lstlisting}[style=Rstyle]
@@ -764,7 +764,7 @@ ggp <- ggplot(x.pred.limits, aes(age, est)) + xlab("Age (Years)") + ylab("Distan
 update_labels(ggp, list(fill="Gender (M=0;F=1)")) 
 \end{lstlisting}
 
-\subsection*{4.13 SAS Code}
+\subsection*{4.3.13 SAS Code}
 
 \textbf{ML Estimation}
 \begin{lstlisting}[style=SASstyle]
@@ -910,13 +910,13 @@ run;
 \end{tcolorbox}
 %-----------------------------------------------------------------------------
 
-\subsection*{4.1 Model Form}
+\subsection*{4.4.1 Model Form}
 
 $$\bY_i = \bX_i \bbeta + \bZ_i \mathbf{b}_i + \bepsilon_i$$
 
 where $\mathbf{b}_i \sim \Normal(\mathbf{0}, \mathbf{D})$ independently of $\bepsilon_i \sim \Normal(\mathbf{0}, \mathbf{R}_i)$, and $\mathbf{b}_i$ are independent across subjects.
 
-\subsection*{4.2 Model Assumptions}
+\subsection*{4.4.2 Model Assumptions}
 
 \begin{itemize}[leftmargin=2em]
   \item Subjects are independent of each other.
@@ -926,7 +926,7 @@ where $\mathbf{b}_i \sim \Normal(\mathbf{0}, \mathbf{D})$ independently of $\bep
   \item Conditional on $\mathbf{b}_i$: $\bY_i \mid \mathbf{b}_i \sim \Normal(\bX_i\bbeta + \bZ_i\mathbf{b}_i, \mathbf{R}_i)$.
 \end{itemize}
 
-\subsection*{4.3 Covariance Structure}
+\subsection*{4.4.3 Covariance Structure}
 
 \begin{align*}
 \Var(\bY_i) &= \Var(\bX_i\bbeta + \bZ_i\mathbf{b}_i + \bepsilon_i) \\
@@ -935,17 +935,17 @@ where $\mathbf{b}_i \sim \Normal(\mathbf{0}, \mathbf{D})$ independently of $\bep
 
 The marginal covariance arises from two sources: between-subject heterogeneity captured by $\mathbf{D}$ through the random effects, and within-subject error captured by $\mathbf{R}_i$. Under the conditional independence assumption $\mathbf{R}_i = \sigma^2\mathbf{I}$, the marginal covariance becomes $\bZ_i\mathbf{D}\bZ_i' + \sigma^2\mathbf{I}$. The structure of $\mathbf{D}$ and $\mathbf{R}_i$ can be specified flexibly. Unlike ANOVA, the covariance structure is selected as part of the modeling process rather than imposed.
 
-\subsection*{4.4 How Time is Handled}
+\subsection*{4.4.4 How Time is Handled}
 
 Time is \textbf{continuous} and enters as a covariate in both $\bX_i$ and $\bZ_i$. Flexible parametric forms can be used. The design does not need to be balanced --- subjects can be observed at different time points with different numbers of observations.
 
-\subsection*{4.5 Population-Mean Trajectory}
+\subsection*{4.4.5 Population-Mean Trajectory}
 
 $$\E(\bY_i) = \bX_i \bbeta$$
 
 The population mean trajectory is captured through the fixed effects $\bbeta$, which describe the average trajectory across all subjects. Because the link function is the identity, the random effects average to zero marginally, and $\bbeta$ has a population-averaged interpretation.
 
-\subsection*{4.6 Subject-Specific Trajectory}
+\subsection*{4.4.6 Subject-Specific Trajectory}
 
 $$\E(\bY_i \mid \mathbf{b}_i) = \bX_i \bbeta + \bZ_i \mathbf{b}_i$$
 
@@ -953,7 +953,7 @@ The subject-specific trajectory shifts the population mean by the subject's rand
 $$\tilde{\mathbf{b}}_i = \hat{\mathbf{D}}\bZ_i'\hat{\bSigma}_i^{-1}(\bY_i - \bX_i\hat{\bbeta})$$
 The BLUP is the conditional mean $\E(\mathbf{b}_i \mid \bY_i)$ evaluated at estimated parameters. Subjects with fewer observations have their predicted random effects pulled more strongly toward zero (the population mean), because less subject-specific information is available.
 
-\subsection*{4.7 Estimation}
+\subsection*{4.4.7 Estimation}
 
 Because $\mathbf{b}_i$ is unobserved, estimation proceeds by integrating the random effects out of the joint distribution. Under normality, the marginal distribution is:
 $$\bY_i \sim \Normal(\bX_i\bbeta,\; \bZ_i\mathbf{D}\bZ_i' + \mathbf{R}_i)$$
@@ -968,14 +968,14 @@ The EM algorithm is very stable but converges slowly. In practice, software ofte
 
 \textbf{ML vs.\ REML:} ML jointly estimates $\bbeta$ and variance components but underestimates variance components in small samples. REML profiles out $\bbeta$ before estimating variance components, correcting the downward bias. Use ML for mean model comparisons; use REML for covariance model comparisons.
 
-\subsection*{4.8 Hypothesis Testing}
+\subsection*{4.4.8 Hypothesis Testing}
 
 \begin{itemize}[leftmargin=2em]
   \item \textbf{Fixed effects ($\bbeta$):} LRT using ML (not REML); Wald tests also valid. For small samples, Kenward-Roger or Satterthwaite corrections to the denominator degrees of freedom are recommended, because standard $\chi^2$ tests can be anti-conservative in small samples.
   \item \textbf{Random effects ($\mathbf{D}$):} REML-based LRT for nested covariance models. When testing $H_0: \sigma^2 = 0$, the null hypothesis lies on the boundary of the parameter space and the standard $\chi^2$ p-value is too large (conservative). Use $\alpha = 0.10$ as an ad hoc correction.
 \end{itemize}
 
-\subsection*{4.9 Model Selection}
+\subsection*{4.4.9 Model Selection}
 
 Model selection proceeds in two stages:
 \begin{itemize}[leftmargin=2em]
@@ -985,11 +985,11 @@ Model selection proceeds in two stages:
   \item Comparing model-based and sandwich standard errors serves as a diagnostic: substantial disagreement suggests covariance misspecification.
 \end{itemize}
 
-\subsection*{4.10 Missing Data}
+\subsection*{4.4.10 Missing Data}
 
 Valid under MAR. The marginal likelihood uses all observed data from partially observed subjects without requiring complete records. MAR handling is a key practical advantage over ANOVA, MANOVA, and the GLM under Option 2. MNAR is not handled without additional assumptions and explicit modeling of the missingness process.
 
-\subsection*{4.11 Diagnostics}
+\subsection*{4.4.11 Diagnostics}
 
 Two types of residuals are available, each assessing different assumptions:
 
@@ -1008,6 +1008,119 @@ For both residual types, apply the Cholesky transformation $\mathbf{r}_i^* = \ma
   \item In SAS, \texttt{proc mixed} computes all influence diagnostics automatically with the \texttt{influence} option.
 \end{itemize}
 
+\subsection*{4.4.12 R Code}
+
+\textbf{Fit Model}
+\begin{lstlisting}[style=Rstyle]
+library(nlme)
+
+# Random Intercepts Only
+lme_randint = lme(fixed = outcome ~ covariates + time,
+                  data = dat,
+                  random = ~ 1 | id,
+                  method = "REML")
+
+# Random Intercepts and Random Slopes
+lme_randslope = lme(fixed = outcome ~ covariates + time,
+                    data = dat,
+                    random = ~ 1 + time | id,
+                    method = "REML")
+\end{lstlisting}
+
+\textbf{LRT}
+\begin{lstlisting}[style=Rstyle]
+# Log likelihoods
+logLik_randint = 2 * as.numeric( logLik(lme_randint, REML = T) )
+logLik_randslope = 2 * as.numeric( logLik(lme_randslope, REML = T) )
+
+# Test statistic and p-value
+LRT_stat = - (logLik_randint - logLik_randslope)
+p_val = 1 - 0.5 * (pchisq(LRT_stat, df = 1) + pchisq(LRT_stat, df = 2))
+\end{lstlisting}
+
+\textbf{Random Effects (BLUPs)}
+\begin{lstlisting}[style=Rstyle]
+ranef_table = ranef(lme_fit)
+\end{lstlisting}
+
+\textbf{Subject-Specific Mean Trajectories}
+\begin{lstlisting}[style=Rstyle]
+ss_preds = fitted(lme_fit)
+\end{lstlisting}
+
+\subsection*{4.4.13 SAS Code}
+
+\text{Fit Model}
+\begin{lstlisting}[style=SASstyle]
+title1 j=c "Random Intercept Model";
+ods output FitStatistics = work.RandInt;
+proc mixed data = dental method=reml noclprint;
+	class gender(ref='F') cTime id;
+	model distance = gender time*gender / noint solution ;
+	random intercept / subject=id g gcorr v vcorr;
+	repeated cTime / subject=id group=gender r rcorr;
+run;
+quit;
+
+title1 j=c "Random Intercept/Slope Model";
+ods output FitStatistics = work.RandIntSlp;
+proc mixed data = dental method=reml noclprint;
+	class gender(ref='F') cTime id;
+	model distance = gender time*gender / noint solution ;
+	random intercept time / type=un subject=id g gcorr v vcorr;
+	repeated cTime / subject=id group=gender r rcorr;
+run;
+quit;
+\end{lstlisting}
+
+\textbf{LRT}
+\begin{lstlisting}[style=SASstyle]
+data LRT;
+ merge work.RandInt(rename=(Value=RandInt))
+	   work.RandIntSlp(rename=(Value=RandSlp));
+ by descr;
+ if descr = '-2 Res Log Likelihood' then do;
+   LRT         = RandInt - RandSlp;
+   CritValue   = 5.14;
+   RejectNull  = (LRT>CritValue);
+ end;
+run;
+
+title1 j=c "Random Effects Model Selection Results";
+proc print data = LRT noobs; 
+run;
+\end{lstlisting}
+
+\textbf{Random Effects (BLUPs)}
+\begin{lstlisting}[style=SASstyle]
+ods output Estimates = work.blups1;
+proc mixed data = dental method=reml noclprint;
+	class gender(ref='F') cTime id;
+	model distance = gender time*gender / noint solution outpred=blupsAll ;
+	random intercept time / subject=id type=un;
+	repeated cTime   / subject=id type=vc group=gender;
+
+	estimate 'Sub=1;Sex=F;Time=0'  gender 0 1 time*gender 0 8  | intercept 1 time  8 / subject 1 cl;
+	estimate 'Sub=1;Sex=F;Time=0'  gender 0 1 time*gender 0 9  | intercept 1 time  9 / subject 1 cl;
+	estimate 'Sub=1;Sex=F;Time=0'  gender 0 1 time*gender 0 10 | intercept 1 time 10 / subject 1 cl;
+	estimate 'Sub=1;Sex=F;Time=0'  gender 0 1 time*gender 0 11 | intercept 1 time 11 / subject 1 cl;
+	estimate 'Sub=1;Sex=F;Time=0'  gender 0 1 time*gender 0 12 | intercept 1 time 12 / subject 1 cl;
+	estimate 'Sub=1;Sex=F;Time=0'  gender 0 1 time*gender 0 13 | intercept 1 time 13 / subject 1 cl;
+	estimate 'Sub=1;Sex=F;Time=0'  gender 0 1 time*gender 0 14 | intercept 1 time 14 / subject 1 cl;
+run;
+quit;
+
+title "Empirical BLUPs";
+proc print data = Blups1 noobs;
+	var label estimate lower upper;
+run;
+
+proc print data = blupsAll(obs=4) noobs;
+	var id gender time pred lower upper;
+run;
+\end{lstlisting}
+
+
 \newpage
 
 %-----------------------------------------------------------------------------
@@ -1015,7 +1128,7 @@ For both residual types, apply the Cholesky transformation $\mathbf{r}_i^* = \ma
 \end{tcolorbox}
 %-----------------------------------------------------------------------------
 
-\subsection*{4.1 Model Form}
+\subsection*{4.5.1 Model Form}
 
 The marginal distribution of each $Y_{ij}$ belongs to the exponential family:
 $$f(Y_{ij}) = \exp\left\{\frac{Y_{ij}\theta_{ij} - b(\theta_{ij})}{a(\phi)} + c(Y_{ij}, \phi)\right\}$$
@@ -1029,7 +1142,7 @@ The model is specified through three components:
 
 Only the first two moments are specified --- the full joint distribution of $\bY_i$ is not specified. The marginal model is the direct generalization of the GLM under Option 2 (moment assumptions only) to non-normal outcomes through the link and variance functions.
 
-\subsection*{4.2 Model Assumptions}
+\subsection*{4.5.2 Model Assumptions}
 
 \begin{itemize}[leftmargin=2em]
   \item Subjects are independent of each other.
@@ -1041,13 +1154,13 @@ Only the first two moments are specified --- the full joint distribution of $\bY
   \item No random subject effect is included. Between-subject heterogeneity is captured through $\mathbf{V}_i$.
 \end{itemize}
 
-\subsection*{4.3 Covariance Structure}
+\subsection*{4.5.3 Covariance Structure}
 
 $$\Var(\bY_i) \approx \mathbf{V}_i = \phi\mathbf{A}_i^{1/2}\mathbf{R}(\alpha)\mathbf{A}_i^{1/2}$$
 
 The working covariance is directly analogous to $\bSigma_i$ under GLM Option 2. The working correlation matrix $\mathbf{R}(\alpha)$ can be specified as independence, compound symmetry, AR(1), unstructured, or other structures. The key difference from GLM Option 2 is that the variance function $\nu(\mu_{ij})$ links the variance to the mean --- appropriate for non-normal outcomes such as binary or count data --- whereas in the GLM the variance is modeled separately from the mean.
 
-\subsection*{4.4 How Time is Handled}
+\subsection*{4.5.4 How Time is Handled}
 
 Time is \textbf{continuous} and enters as a covariate in $\mathbf{X}_{ij}$, as in the GLM and LMM. Flexible parametric forms can be used. The design does not need to be balanced.
 
@@ -1057,11 +1170,11 @@ $$\E(Y_{ij}) = \mu_{ij} = g^{-1}(\mathbf{X}_{ij}'\bbeta)$$
 
 The population mean trajectory is modeled directly through $\bbeta$, which has a population-averaged interpretation --- the same scientific target as the GLM. The mean is related to the linear predictor through the link function $g(\cdot)$, which may be nonlinear (for example, logit for binary outcomes).
 
-\subsection*{4.6 Subject-Specific Trajectory}
+\subsection*{4.5.6 Subject-Specific Trajectory}
 
 No subject-specific trajectory is available. As in the GLM, the marginal model includes no random effects, so all subjects in the same covariate group follow the same mean trajectory. Between-subject heterogeneity is captured entirely through the working covariance $\mathbf{V}_i$.
 
-\subsection*{4.7 Estimation}
+\subsection*{4.5.7 Estimation}
 
 Estimation proceeds via \textbf{Generalized Estimating Equations (GEE)}, proposed by Liang and Zeger (1986). GEE is the direct generalization of WLS under GLM Option 2 to non-normal outcomes. The GEE estimator solves:
 $$\sum_{i=1}^N \mathbf{D}_i'\mathbf{V}_i^{-1}(\bY_i - \bmu_i) = \mathbf{0}$$
@@ -1078,13 +1191,13 @@ $$\mathbf{A} = \sum_{i=1}^N \mathbf{D}_i'\mathbf{V}_i^{-1}\mathbf{D}_i \qquad \m
 
 When $g(\cdot)$ is the identity link, $\mathbf{D}_i = \bX_i$ and these expressions reduce to those of the GLM under Option 2, making the parallel explicit. The sandwich estimator is valid regardless of whether $\mathbf{V}_i$ is correctly specified --- the same property as the GLM under Option 2.
 
-\subsection*{4.8 Hypothesis Testing}
+\subsection*{4.5.8 Hypothesis Testing}
 
 As in the GLM under Option 2, LRT is not valid because no full likelihood is specified. Wald tests with sandwich standard errors are the standard approach. The generalized score test is also available for testing $H_0: \mathbf{C}\bbeta = \mathbf{0}$:
 $$T = S(\hat{\bbeta}_\text{RED})'\hat{\boldsymbol{\Sigma}}_m\mathbf{C}(\mathbf{C}'\hat{\boldsymbol{\Sigma}}_e\mathbf{C})^{-1}\mathbf{C}'\hat{\boldsymbol{\Sigma}}_mS(\hat{\bbeta}_\text{RED})$$
 where $\hat{\bbeta}_\text{RED}$ is the estimated regression parameter vector from the reduced model (estimated under the constraint $\mathbf{C}\bbeta = \mathbf{0}$), $S(\hat{\bbeta}_\text{RED})$ is the GEE score vector at $\hat{\bbeta}_\text{RED}$, $\hat{\boldsymbol{\Sigma}}_m$ is the model-based covariance estimate, and $\hat{\boldsymbol{\Sigma}}_e$ is the empirical (sandwich) covariance estimate. The statistic $T$ is compared to a $\chi^2$ distribution with degrees of freedom equal to the number of rows of $\mathbf{C}$.
 
-\subsection*{4.9 Model Selection}
+\subsection*{4.5.9 Model Selection}
 
 As in the GLM under Option 2, LRT-based selection is not available. Model selection methods are less well developed than for likelihood-based models.
 
@@ -1094,7 +1207,7 @@ As in the GLM under Option 2, LRT-based selection is not available. Model select
   \item Comparing model-based and sandwich standard errors serves as a diagnostic: substantial disagreement suggests working covariance misspecification.
 \end{itemize}
 
-\subsection*{4.10 Missing Data}
+\subsection*{4.5.10 Missing Data}
 
 Valid under MCAR only --- for the same reason as the GLM under Option 2. The estimating equations require $\E(Y_{ij} \mid R_{ij} = 1) = \mu_{ij}$, which holds under MCAR but fails under MAR. Under MAR, GEE estimates can be inconsistent because the observed respondents are a biased sample of the population. Two extensions can restore validity under MAR:
 \begin{itemize}[leftmargin=2em]
@@ -1103,13 +1216,58 @@ Valid under MCAR only --- for the same reason as the GLM under Option 2. The est
 \end{itemize}
 MNAR is not handled without additional assumptions and explicit modeling of the missingness process.
 
-\subsection*{4.11 Diagnostics}
+\subsection*{4.5.11 Diagnostics}
 
 Outcomes are not required to be normally distributed, so the Cholesky-based diagnostics from the GLM (Option 1) and LMM do not directly apply. The residual used is the \textbf{marginal Pearson residual} $r_{ij} = (Y_{ij} - \hat{\mu}_{ij})/\nu(\hat{\mu}_{ij})^{1/2}$, which assesses the mean structure. Formal diagnostics for marginal models are less standardized than for normal-errors models and are not covered further in the course notes.
 
 \begin{itemize}[leftmargin=2em]
   \item \textbf{Covariance diagnostic:} Comparing model-based and sandwich standard errors identifies potential working covariance misspecification --- the same diagnostic as the GLM under Option 2.
 \end{itemize}
+
+\subsection{4.5.12 R Code}
+
+\textbf{Fit Model}
+\begin{lstlisting}[style=Rstyle]
+# Modeling binary data
+gee_fit <- geeglm(outcome ~ covariates + time,
+                  id = id,
+                  data = dat,
+                  family = binomial(link = "logit"),
+                  corstr = "unstructured")
+
+# Modeling count data
+gee_fit <- geeglm(outcome ~ covariates + time,
+                  id = id,
+                  data = dat,
+                  family = poisson(link = "log"),
+                  corstr = "unstructured")
+\end{lstlisting}
+
+\subsection{4.5.13 SAS Code}
+
+\textbf{Fit Model}
+\begin{lstlisting}[style=SASstyle]
+/*** Modeling binary data ***/
+proc genmod data=lead plots=(all) ;
+	where week > 0;
+	class id trt(ref='P') cWeek;
+	model lowlead(event='1') = trt week trt*week 
+		/ dist=binomial link=logit scale=pearson aggregate;
+	output out = estimates pred=est lower=lower upper=upper reschi=rcsq resraw=r;
+	repeated subject=id / within=cWeek type=exch corrw modelse;
+run;
+
+/*** Modeling count data ***/
+proc genmod data=dat2.skincancer;
+class id cYear;
+model newcancer(event='1')=
+  treatment year treatment*year agecent skin 
+  gender exposure exposure*exposure / d=poisson link=log;
+	repeated subject=id/withinsubject=cYear type=un covb ;
+	contrast 'treatment effect' treatment 1 , treatment*year 1 /e;
+	contrast 'exposure' exposure 1 , exposure*exposure 1/e;
+run;
+\end{lstlisting}
 
 \newpage
 
@@ -1118,7 +1276,7 @@ Outcomes are not required to be normally distributed, so the Cholesky-based diag
 \end{tcolorbox}
 %-----------------------------------------------------------------------------
 
-\subsection*{4.1 Model Form}
+\subsection*{4.6.1 Model Form}
 
 The GLMM is specified in two steps, directly paralleling the LMM but replacing the normal distribution with the exponential family and adding a link function --- exactly as the marginal model extended the GLM.
 
@@ -1137,7 +1295,7 @@ Conditional on $\mathbf{b}_i$, the responses $Y_{i1}, \ldots, Y_{in_i}$ are mutu
 \textbf{Level 2 --- Random effects distribution:}
 $$\mathbf{b}_i \sim \Normal(\mathbf{0}, \mathbf{D}), \quad \text{independent across subjects}$$
 
-\subsection*{4.2 Model Assumptions}
+\subsection*{4.6.2 Model Assumptions}
 
 \begin{itemize}[leftmargin=2em]
   \item Subjects are independent of each other.
@@ -1147,7 +1305,7 @@ $$\mathbf{b}_i \sim \Normal(\mathbf{0}, \mathbf{D}), \quad \text{independent acr
   \item A full joint distribution $f(\bY_i)$ is specified --- the key distinction from the marginal model, which specifies only the first two moments.
 \end{itemize}
 
-\subsection*{4.3 Covariance Structure}
+\subsection*{4.6.3 Covariance Structure}
 
 Unlike the LMM, the marginal covariance $\Var(\bY_i)$ does not have a closed form because the link function is nonlinear. Using the law of total variance:
 $$\Var(Y_{ij}) = \E_{\mathbf{b}_i}[\Var(Y_{ij} \mid \mathbf{b}_i)] + \Var_{\mathbf{b}_i}(\E[Y_{ij} \mid \mathbf{b}_i])$$
@@ -1157,24 +1315,24 @@ The first term is the conditional variance averaged over the random effects dist
 The intraclass correlation coefficient (ICC) can be computed using the latent variable representation. For a random intercept model:
 $$\text{ICC} = \frac{\sigma^2}{\sigma^2 + 1} \quad \text{(probit)} \qquad \text{ICC} = \frac{\sigma^2}{\sigma^2 + \pi^2/3} \quad \text{(logistic)}$$
 
-\subsection*{4.4 How Time is Handled}
+\subsection*{4.6.4 How Time is Handled}
 
 Time is \textbf{continuous} and enters as a covariate in both $\mathbf{X}_{ij}$ and $\mathbf{Z}_{ij}$, as in the LMM. Flexible parametric forms can be used. The design does not need to be balanced.
 
-\subsection*{4.5 Population-Mean Trajectory}
+\subsection*{4.6.5 Population-Mean Trajectory}
 
 $$\E(Y_{ij}) = \E_{\mathbf{b}_i}\left[g^{-1}(\mathbf{X}_{ij}'\bbeta + \mathbf{Z}_{ij}'\mathbf{b}_i)\right]$$
 
 The population mean does not simplify to $g^{-1}(\mathbf{X}_{ij}'\bbeta)$ when $g(\cdot)$ is nonlinear, because a nonlinear contrast of averages is not equal to the average of nonlinear contrasts. The population mean requires integrating over the distribution of $\mathbf{b}_i$ and has no closed form. As a result, $\bbeta$ in the GLMM does \textbf{not} have a population-averaged interpretation, in contrast to both the marginal model and the LMM. The GLMM targets individual-level inference.
 
-\subsection*{4.6 Subject-Specific Trajectory}
+\subsection*{4.6.6 Subject-Specific Trajectory}
 
 $$\E(Y_{ij} \mid \mathbf{b}_i) = g^{-1}(\mathbf{X}_{ij}'\bbeta + \mathbf{Z}_{ij}'\mathbf{b}_i)$$
 
 The subject-specific trajectory is the primary scientific target of the GLMM. The regression parameters $\bbeta$ have a \textbf{subject-specific interpretation}: each element of $\bbeta$ describes the direct effect of a covariate on a given individual's response, holding that individual's random effect $\mathbf{b}_i$ fixed. Because $\mathbf{b}_i$ is unobserved, the subject-specific trajectory is obtained by substituting the empirical Bayes prediction (BLUP):
 $$\tilde{\mathbf{b}}_i = \hat{\mathbf{D}}\bZ_i'\hat{\bSigma}_i^{-1}(\bY_i - \hat{\bmu}_i)$$
 
-\subsection*{4.7 Estimation}
+\subsection*{4.6.7 Estimation}
 
 As in the LMM, $\mathbf{b}_i$ is unobserved. The complete-data log-likelihood has the same structure as the LMM:
 $$\ell(\bbeta, \mathbf{D}) = \sum_{i=1}^N \log f(\bY_i \mid \mathbf{b}_i) + \sum_{i=1}^N \log f(\mathbf{b}_i)$$
@@ -1194,7 +1352,7 @@ Two estimation approaches are used instead:
   \item \textbf{Pseudo-likelihood:} Uses a first-order Taylor series expansion to linearize the model around current parameter estimates, converting the GLMM approximately into an LMM that can then be solved with standard LMM machinery. The linearization creates a conceptual bridge back to the LMM --- pseudo-likelihood makes the GLMM look like an LMM locally at each iteration. Computationally cheaper than quadrature but LRT is not valid. Wald tests are approximately valid. Available as the default method in SAS PROC GLIMMIX.
 \end{itemize}
 
-\subsection*{4.8 Hypothesis Testing}
+\subsection*{4.6.8 Hypothesis Testing}
 
 \textbf{With quadrature (true ML):}
 \begin{itemize}[leftmargin=2em]
@@ -1209,7 +1367,7 @@ Two estimation approaches are used instead:
   \item Wald tests are approximately valid.
 \end{itemize}
 
-\subsection*{4.9 Model Selection}
+\subsection*{4.6.9 Model Selection}
 
 \begin{itemize}[leftmargin=2em]
   \item \textbf{Mean structure:} LRT with quadrature-based ML, Wald tests, AIC, or BIC.
@@ -1217,13 +1375,103 @@ Two estimation approaches are used instead:
   \item Model selection is less well developed than for the LMM, and the computational burden means fewer candidate models are typically compared in practice.
 \end{itemize}
 
-\subsection*{4.10 Missing Data}
+\subsection*{4.6.10 Missing Data}
 
 Valid under MAR. The full marginal likelihood uses all observed data from partially observed subjects without requiring complete records --- for the same reason as the LMM. MAR handling is a key practical advantage over the marginal model, which requires MCAR. MNAR is not handled without additional assumptions and explicit modeling of the missingness process.
 
-\subsection*{4.11 Diagnostics}
+\subsection*{4.6.11 Diagnostics}
 
 Outcomes are non-normal, so the Cholesky-based diagnostics from the GLM (Option 1) and LMM do not directly apply --- the same limitation as the marginal model. Diagnostics for the GLMM are less standardized than for normal-errors models and are not covered further in the course notes.
+
+\subsection{4.6.12 R Code}
+
+\textbf{Fit Model}
+\begin{lstlisting}[style=Rstyle]
+library(lme4)
+
+# Binary response : random intercept
+glmm_fit <- glmer(outcome ~ covariates + time + (1 | id),
+                  data = dat,
+                  family = binomial(link = "logit"),
+                  nAGQ = 10) # number of quadrature points
+                             # nAGQ = 1 is Laplace (faster, less accurate)
+
+# Poisson response : random intercept and slope
+glmm_fit <- glmer(outcome ~ covariates + time + (1 + time | id),
+                  data = dat,
+                  family = poisson(link = "log"),
+                  nAGQ = 10)
+\end{lstlisting}
+
+\begin{lstlisting}[style=Rstyle]
+library(GLMMadaptive)
+
+# Binary response: random intercept
+glmm_fit <- mixed_model(fixed = outcome ~ covariates + time,
+                        random = ~ 1 | id,
+                        data = dat,
+                        family = binomial(link = "logit"),
+                        control = list(nAGQ = 10))
+
+# Poisson response: random intercept and slope
+glmm_fit <- mixed_model(fixed = outcome ~ covariates + time,
+                        random = ~ 1 + time | id,
+                        data = dat,
+                        family = poisson(link = "log"),
+                        control = list(nAGQ = 10))
+\end{lstlisting}
+
+\textbf{BLUPs}
+\begin{lstlisting}[style=Rstyle]
+ranef_table = ranef(fit)
+\end{lstlisting}
+
+\textbf{Subject-Specific Mean Trajectories}
+\begin{lstlisting}[style=Rstyle]
+ss_preds = fitted(fit)
+\end{lstlisting}
+
+\textbf{Model Comparison}
+\begin{lstlisting}[style=Rstyle]
+# LRT (Valid for quadrature)
+anova(fit1, fit2)
+
+# AIC / BIC
+AIC(fit1); AIC(fit2)
+BIC(fit1); BIC(fit2)
+\end{lstlisting}
+
+\subsection{4.5.13 SAS Code}
+
+\textbf{Fit Model / BLUPs}
+\begin{lstlisting}[style=SASstyle]
+/* Quadrature (recommended): binomial model */
+proc glimmix data = dat method = quad(qpoints = 10);
+    class id;
+    model y = x / dist = binary link = logit solution;
+    random intercept / subject = id;
+run;
+
+/* Pseudo-likelihood (default, faster): poisson model with BLUPs */
+proc glimmix data = dat;
+    class id;
+    model y = x / dist = poisson link = log solution;
+    random intercept / subject = id solution;  /* solution gives BLUPs */
+run;
+\end{lstlisting}
+
+\textbf{Model Comparison}
+\begin{lstlisting}[style=SASstyle]
+/* Quadrature - LRT and Wald both valid in large samples */
+proc glimmix data = dat method = quad(qpoints=10);
+    class id ;
+    model y = x time / dist = binary link = logit solution;
+    random intercept / subject = id;
+    contrast "Time Effect" time 1;
+run;
+
+/* Multiple Models: Compare AIC/BIC from PROC GLIMMIX output directly */
+\end{lstlisting}
 
 \newpage
 
